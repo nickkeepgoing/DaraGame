@@ -145,29 +145,37 @@ button {
    ป๊อปอัปคำถามต้องอยู่ในจอเดียวโดยไม่ต้องเลื่อน ไม่งั้นผู้เล่นจะกดตัวเลือก
    ข้อสุดท้ายไม่ทันภายในเวลาที่จำกัด
    ------------------------------------------------------------------ */
-@media (max-height: 460px) {
+@media (max-height: 520px) {
+  .panel {
+    max-height: 94vh;
+    overflow-y: auto;
+    padding: 1rem !important;
+  }
   .quiz-panel {
-    padding: 0.75rem 1rem;
+    padding: 0.65rem 0.9rem !important;
     border-radius: 1rem;
+    max-height: 96vh;
+    overflow-y: auto;
   }
   .quiz-stem {
-    font-size: 1rem;
-    line-height: 1.5;
-    margin-top: 0.5rem;
-    margin-bottom: 0.6rem;
+    font-size: 0.95rem !important;
+    line-height: 1.4 !important;
+    margin-top: 0.35rem !important;
+    margin-bottom: 0.45rem !important;
   }
   .quiz-choice {
-    min-height: 44px;
-    padding-block: 0.4rem;
-    font-size: 0.9rem;
-    line-height: 1.45;
+    min-height: 38px !important;
+    padding-block: 0.3rem !important;
+    font-size: 0.85rem !important;
+    line-height: 1.35 !important;
   }
   .quiz-explain {
-    margin-top: 0.6rem;
-    padding: 0.6rem 0.8rem;
-    font-size: 0.8rem;
+    margin-top: 0.4rem !important;
+    padding: 0.5rem 0.7rem !important;
+    font-size: 0.75rem !important;
   }
 }
+
 
 /* ------------------------------------------------------------------
    Animations

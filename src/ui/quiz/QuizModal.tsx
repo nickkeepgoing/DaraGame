@@ -115,7 +115,7 @@ export function QuizModal() {
   useEffect(
     () =>
       onBus('quiz:open', (payload) => {
-        if (!runId) return;
+        const activeRunId = runId || 'fallback-run';
         setKind(payload.kind);
         kindRef.current = payload.kind;
         setStage(payload.stage);
@@ -124,23 +124,22 @@ export function QuizModal() {
         setChosenId(null);
 
         void api
-          .nextQuestion(runId, { kind: payload.kind, stage: payload.stage })
+          .nextQuestion(activeRunId, { kind: payload.kind, stage: payload.stage })
           .then((q) => {
-            if (!q) {
-              // คลังคำถามหมด — ถ้าเป็นคำถามฟื้น ให้ถือว่าตอบถูกไว้ก่อน
-              // (ไม่ยุติธรรมที่ผู้เล่นจะตายเพราะคลังคำถามของเราไม่พอ)
+            if (q) {
+              setQuestion(q);
+              setRemainingMs(q.timeLimitS * 1000);
+              askedAtRef.current = Date.now();
+              setPhase('asking');
+            } else {
               close(payload.kind === 'revive');
-              return;
             }
-            setQuestion(q);
-            setRemainingMs(q.timeLimitS * 1000);
-            askedAtRef.current = Date.now();
-            setPhase('asking');
           })
           .catch(() => close(payload.kind === 'revive'));
       }),
     [runId, close],
   );
+
 
   /* ---------- จับเวลา ---------- */
   useEffect(() => {

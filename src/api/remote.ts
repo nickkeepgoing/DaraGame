@@ -5,7 +5,9 @@
  *          คะแนนคำนวณที่เซิร์ฟเวอร์ทั้งหมด ผ่าน RPC ใน db/03_rpc.sql
  */
 import { supabase, ensureAnonymousAuth } from '@/lib/supabase';
+import { localApi } from './local';
 import type {
+
   AnswerResult,
   Difficulty,
   FinishRunResult,
@@ -114,16 +116,21 @@ export const remoteApi = {
   },
 
   async nextQuestion(runId: string, req: QuestionRequest): Promise<PublicQuestion | null> {
-    const { data, error } = await client().rpc('next_question', {
-      p_run_id: runId,
-      p_kind: req.kind,
-      p_stage: req.kind === 'main' ? req.stage : null,
-    });
-    if (error) throw new Error(error.message);
-
-    const rows = (data ?? []) as QuestionRow[];
-    return rows.length ? toQuestion(rows[0]) : null;
+    try {
+      const { data, error } = await client().rpc('next_question', {
+        p_run_id: runId,
+        p_kind: req.kind,
+        p_stage: req.kind === 'main' ? req.stage : null,
+      });
+      if (!error && data && (data as QuestionRow[]).length > 0) {
+        return toQuestion((data as QuestionRow[])[0]);
+      }
+    } catch {
+      /* Fallback if Supabase database has no imported questions or RPC error */
+    }
+    return localApi.nextQuestion(runId, req);
   },
+
 
   async answerQuestion(
     runId: string,

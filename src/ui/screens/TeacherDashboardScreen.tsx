@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, isOffline } from '@/api';
 import type { QuestionStat, StudentProgress, TeacherClass } from '@/types/game';
-
+import { setTeacherPassword } from '@/ui/components/TeacherPasswordModal';
 
 interface Props {
   onBack: () => void;
@@ -30,6 +30,11 @@ export function TeacherDashboardScreen({ onBack }: Props) {
   const [editingClass, setEditingClass] = useState<TeacherClass | null>(null);
   const [editSeed, setEditSeed] = useState<string>('');
   const [updating, setUpdating] = useState(false);
+
+  /* Password change state */
+  const [showChangePwdModal, setShowChangePwdModal] = useState(false);
+  const [newTeacherPassword, setNewTeacherPassword] = useState('');
+  const [pwdChangedNotice, setPwdChangedNotice] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -111,6 +116,16 @@ export function TeacherDashboardScreen({ onBack }: Props) {
     }
   }
 
+  function handleSavePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newTeacherPassword.trim()) return;
+    setTeacherPassword(newTeacherPassword.trim());
+    setShowChangePwdModal(false);
+    setNewTeacherPassword('');
+    setPwdChangedNotice(true);
+    setTimeout(() => setPwdChangedNotice(false), 4000);
+  }
+
   const filteredStudents =
     selectedClassId === 'all'
       ? students
@@ -119,22 +134,22 @@ export function TeacherDashboardScreen({ onBack }: Props) {
   return (
     <div className="absolute inset-0 z-50 flex flex-col bg-night-950 text-white overflow-hidden">
       {/* ---------- Header Bar ---------- */}
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 bg-night-900/90 px-6 py-4 backdrop-blur-md">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-night-900/90 px-4 sm:px-6 py-2.5 sm:py-4 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <span className="text-3xl">👨‍🏫</span>
+          <span className="text-2xl sm:text-3xl">👨‍🏫</span>
           <div>
-            <h1 className="font-display text-xl font-bold text-amber-400">
+            <h1 className="font-display text-base sm:text-xl font-bold text-amber-400">
               ระบบจัดการสำหรับครูผู้สอน (Teacher Portal)
             </h1>
-            <p className="text-xs text-white/50">
+            <p className="hidden sm:block text-xs text-white/50">
               สร้างห้องเรียน สุ่มรหัสเข้าห้อง ตั้ง Seed ประจำวัน และดูวิเคราะห์สถิตินักเรียน
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+            className={`hidden sm:inline-block rounded-full px-3 py-1 text-xs font-semibold ${
               isOffline
                 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                 : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
@@ -143,13 +158,26 @@ export function TeacherDashboardScreen({ onBack }: Props) {
             {isOffline ? 'โหมดทดสอบออฟไลน์' : 'ต่อฐานข้อมูล Supabase'}
           </span>
           <button
+            onClick={() => setShowChangePwdModal(true)}
+            className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-amber-300 transition-all hover:bg-amber-500/20"
+          >
+            🔑 เปลี่ยนรหัสครู
+          </button>
+          <button
             onClick={onBack}
-            className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-white/20"
+            className="rounded-xl border border-white/20 bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white transition-all hover:bg-white/20"
           >
             กลับหน้าเกม
           </button>
         </div>
       </header>
+
+      {pwdChangedNotice && (
+        <div className="mx-4 sm:mx-6 mt-3 rounded-xl border border-emerald-500/40 bg-emerald-600/20 px-4 py-2.5 text-xs sm:text-sm text-emerald-200">
+          ✅ เปลี่ยนรหัสผ่านสำหรับครูเรียบร้อยแล้ว!
+        </div>
+      )}
+
 
       {/* ---------- Error Alert ---------- */}
       {error && (
@@ -609,6 +637,50 @@ export function TeacherDashboardScreen({ onBack }: Props) {
           </div>
         </div>
       )}
+
+      {/* ---------- MODAL: CHANGE PASSWORD ---------- */}
+
+      {showChangePwdModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="panel w-full max-w-md rounded-3xl p-7 border border-white/20 bg-night-900 shadow-2xl animate-pop-in">
+            <h3 className="text-xl font-bold text-amber-400 mb-2">🔑 เปลี่ยนรหัสผ่านเข้าใช้งานสำหรับครู</h3>
+            <p className="text-xs text-white/60 mb-6">
+              ตั้งรหัสผ่านใหม่เพื่อป้องกันไม่ให้นักเรียนแอบเข้าถึงหน้าจัดการห้องเรียน
+            </p>
+
+            <form onSubmit={handleSavePassword} className="space-y-4">
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-dusk-100">รหัสผ่านใหม่ (New Password)</span>
+                <input
+                  required
+                  type="password"
+                  value={newTeacherPassword}
+                  onChange={(e) => setNewTeacherPassword(e.target.value)}
+                  placeholder="กรอกรหัสผ่านใหม่..."
+                  className="w-full rounded-xl border border-white/20 bg-night-950 px-4 py-3 text-white outline-none focus:border-amber-400"
+                />
+              </label>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowChangePwdModal(false)}
+                  className="rounded-xl border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-medium text-white hover:bg-white/20"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary rounded-xl px-6 py-2.5 font-bold"
+                >
+                  บันทึกรหัสผ่านใหม่
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
