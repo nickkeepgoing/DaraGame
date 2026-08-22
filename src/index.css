@@ -1,0 +1,212 @@
+@import 'tailwindcss';
+
+/* ------------------------------------------------------------------
+   Design tokens — โทนอุ่น พาสเทล ตาม GDD ข้อ 2.1
+   ------------------------------------------------------------------ */
+@theme {
+  --font-display: 'Kanit', 'Noto Sans Thai', system-ui, sans-serif;
+  --font-body: 'Noto Sans Thai', 'Kanit', system-ui, sans-serif;
+
+  --color-dusk-50: #fff4e6;
+  --color-dusk-100: #ffe3c4;
+  --color-dusk-200: #ffc79a;
+  --color-dusk-300: #ffa97b;
+  --color-dusk-400: #ff8a5c;
+
+  --color-night-700: #4a3163;
+  --color-night-800: #35224a;
+  --color-night-900: #2b1b3d;
+  --color-night-950: #1d1129;
+
+  --color-lava-400: #ff9c41;
+  --color-lava-500: #ff6b3d;
+  --color-lava-600: #e14a2b;
+
+  --color-leaf-400: #9bd17b;
+  --color-leaf-500: #7fd68a;
+  --color-leaf-600: #4fa463;
+
+  --color-sky-star: #8ab6f9;
+  --color-cosmic: #c9a7f5;
+}
+
+/* ------------------------------------------------------------------
+   Base
+   ------------------------------------------------------------------ */
+html,
+body,
+#root {
+  height: 100%;
+  /* iOS Safari: 100% = ความสูงรวมแถบเบราว์เซอร์ที่ยุบ/ขยายได้ ทำให้จอกระตุกตอนเลื่อน
+     100dvh คือความสูงที่ "เห็นจริงตอนนี้" — เบราว์เซอร์ที่ไม่รองรับจะใช้ 100% ข้างบนแทน */
+  height: 100dvh;
+  margin: 0;
+  overscroll-behavior: none;
+}
+
+body {
+  font-family: var(--font-body);
+  /* ภาษาไทยมีสระบน/ล่าง + วรรณยุกต์ซ้อนได้ 3 ชั้น -> ต้องมีที่หายใจ */
+  line-height: 1.65;
+  background: var(--color-night-950);
+  color: #fff;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+
+  /* กัน pull-to-refresh และการดีดตัวของหน้าจอตอนกดปุ่มรัวๆ บนมือถือ */
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+
+/* กัน browser scroll / pinch-zoom แทรกตอนเล่นบนมือถือ */
+canvas {
+  display: block;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  /* กัน double-tap zoom ตอนกดปุ่มตัวเลือกคำตอบเร็วๆ */
+  touch-action: manipulation;
+}
+
+/* ------------------------------------------------------------------
+   Safe area — iPhone รอยบาก / แถบ home indicator
+   ในแนวนอน รอยบากจะอยู่ "ด้านข้าง" ไม่ใช่ด้านบน จึงต้องเผื่อทั้ง 4 ด้าน
+   ------------------------------------------------------------------ */
+/* ใช้ max() เพื่อให้ยังมีระยะขอบปกติบนเครื่องที่ไม่มีรอยบาก (env() = 0)
+   ถ้าใส่ env() เดี่ยวๆ ขอบจะกลายเป็น 0 บนคอมทันที */
+.safe-inset {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+  padding-right: max(0.75rem, env(safe-area-inset-right));
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  padding-left: max(0.75rem, env(safe-area-inset-left));
+}
+
+/* ------------------------------------------------------------------
+   Utilities
+   ------------------------------------------------------------------ */
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* ตัวเลขคะแนน/เวลา ให้ความกว้างเท่ากันทุกหลัก ไม่กระตุกตอนนับ */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+.panel {
+  background: color-mix(in oklab, var(--color-night-800) 92%, transparent);
+  border: 1px solid color-mix(in oklab, var(--color-dusk-200) 25%, transparent);
+  box-shadow:
+    0 18px 50px -12px rgb(0 0 0 / 0.65),
+    inset 0 1px 0 rgb(255 255 255 / 0.06);
+  backdrop-filter: blur(10px);
+}
+
+.btn-primary {
+  background: linear-gradient(180deg, var(--color-dusk-300), var(--color-lava-500));
+  color: #35224a;
+  font-weight: 600;
+  box-shadow:
+    0 6px 0 var(--color-lava-600),
+    0 12px 24px -8px rgb(255 107 61 / 0.6);
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease;
+}
+.btn-primary:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 var(--color-lava-600);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: color-mix(in oklab, #fff 8%, transparent);
+  border: 1px solid color-mix(in oklab, #fff 18%, transparent);
+  color: #fff;
+  transition: background 0.15s ease;
+}
+.btn-ghost:hover:not(:disabled) {
+  background: color-mix(in oklab, #fff 16%, transparent);
+}
+
+/* ------------------------------------------------------------------
+   จอเตี้ย — มือถือแนวนอนสูงแค่ 320-420 px (iPhone SE แนวนอน = 375)
+   ป๊อปอัปคำถามต้องอยู่ในจอเดียวโดยไม่ต้องเลื่อน ไม่งั้นผู้เล่นจะกดตัวเลือก
+   ข้อสุดท้ายไม่ทันภายในเวลาที่จำกัด
+   ------------------------------------------------------------------ */
+@media (max-height: 460px) {
+  .quiz-panel {
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+  }
+  .quiz-stem {
+    font-size: 1rem;
+    line-height: 1.5;
+    margin-top: 0.5rem;
+    margin-bottom: 0.6rem;
+  }
+  .quiz-choice {
+    min-height: 44px;
+    padding-block: 0.4rem;
+    font-size: 0.9rem;
+    line-height: 1.45;
+  }
+  .quiz-explain {
+    margin-top: 0.6rem;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Animations
+   ------------------------------------------------------------------ */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-pop-in {
+  animation: pop-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes soft-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+/* หายใจช้าๆ ไม่ใช่กะพริบ — WCAG 2.3.1 ห้ามเกิน 3 ครั้ง/วินาที
+   (เอฟเฟกต์ "กำแพงใกล้" กระตุ้นอาการชักในเด็กที่แพ้แสงได้จริง) */
+.animate-soft-pulse {
+  animation: soft-pulse 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

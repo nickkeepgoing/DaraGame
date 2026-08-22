@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover = วาดเต็มจอถึงใต้รอยบากของ iPhone
+         user-scalable=no  = กัน pinch-zoom / double-tap zoom ตอนกดปุ่มรัวๆ -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#1d1129" />
+    <meta name="description" content="เกมวิ่งหนีอุกกาบาตวันสิ้นโลก ธีมไดโนเสาร์ + ดาราศาสตร์" />
+
+    <!-- iOS: ทำให้เล่นเต็มจอเมื่อผู้ใช้ "เพิ่มไปยังหน้าจอโฮม"
+         เป็นทางเดียวที่จะซ่อนแถบ Safari บน iPhone ได้ (Fullscreen API ใช้ไม่ได้บน iPhone) -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="DaraGame" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="icon" href="/icon-192.png" />
+
+    <title>DaraGame — วิ่งหนีวันสิ้นโลก 🦕☄️</title>
+
+    <!-- ฟอนต์ไทย: preconnect ก่อน ไม่งั้นข้อความจะกระพริบตอนเปิด popup คำถาม -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>เกมนี้ต้องเปิดใช้งาน JavaScript</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
