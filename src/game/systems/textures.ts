@@ -13,24 +13,26 @@ import Phaser from 'phaser';
  */
 
 const C = {
-  body: 0x6fc47a,
-  bodyDark: 0x46925c,
-  bodyDarker: 0x35704a,
-  belly: 0xe3f7cd,
-  crest: 0xf6a96b,
-  crestDark: 0xd9834a,
-  tooth: 0xfffaf0,
+  body: 0x7cd88e,      // สีเขียวมิ้นท์พาสเทลน่ารัก
+  bodyDark: 0x58b86d,  // เขียวเข้มตัดขอบ
+  bodyDarker: 0x3fa055,// เขียวเงาลึก
+  belly: 0xfff7d6,     // ท้องสีครีมอุ่นๆ
+  blush: 0xff9ebb,     // แก้มชมพูระเรื่อ
+  crest: 0xff9466,     // หนามหลังสีส้มคอรัลพาสเทล
+  crestDark: 0xe07448,
+  tooth: 0xfffcf0,
   eye: 0xffffff,
-  pupil: 0x2b1b3d,
+  pupil: 0x231633,
+  sparkle: 0xffffff,
 
-  rock: 0xb8a08a,
-  rockDark: 0x8c7460,
-  fern: 0x6fbf73,
-  fernDark: 0x3f8f5a,
-  eggShell: 0xfff1d6,
-  eggSpot: 0xd9a066,
+  rock: 0xaa9584,
+  rockDark: 0x7a6555,
+  fern: 0x6bd680,
+  fernDark: 0x3e9e52,
+  eggShell: 0xfff3db,
+  eggSpot: 0xe6a86c,
 
-  meteor: 0x5a4a52,
+  meteor: 0x544557,
   meteorHot: 0xff6b3d,
   meteorGlow: 0xffd166,
 
@@ -39,8 +41,10 @@ const C = {
 
   ember: 0xffb457,
   star: 0xfff3c4,
-  cloud: 0xffe3c4,
-  hill: 0x6b4a7a,
+  cloud: 0xffe8d6,
+  hill: 0x614475,
+  gem: 0xffd700,
+  gemGlow: 0xfff2a3,
 };
 
 /** วาดลงกราฟิกชั่วคราว แล้วอบเป็น texture */
@@ -58,7 +62,7 @@ function bake(
   g.destroy();
 }
 
-/** ขนาดผืนผ้าใบของตัวละคร — T-Rex ตัวยาวกว่าเดิม จึงต้องกว้างขึ้น */
+/** ขนาดผืนผ้าใบของตัวละคร */
 export const TREX_W = 74;
 export const TREX_H = 58;
 
@@ -69,16 +73,11 @@ function teeth(g: Phaser.GameObjects.Graphics, xs: number[], y: number, size = 4
 }
 
 /**
- * ไทรันโนซอรัส เร็กซ์ (หันขวา) — ท่าเดียวกันทุกเฟรม ต่างแค่ตำแหน่งขา
- *
- * จุดเด่นที่ทำให้ "อ่านออกว่าเป็น T-Rex" แม้ตัวเล็กบนจอมือถือ:
- *   1. หัวใหญ่เทอะทะเมื่อเทียบกับลำตัว + ขากรรไกรยาวมีฟัน
- *   2. แขนหน้าเล็กจิ๋วจนดูตลก
- *   3. ขาหลังใหญ่มาก + หางหนายื่นตรงไปข้างหลังเพื่อถ่วงสมดุล
- *   4. ลำตัวขนานพื้น (ไม่ใช่ตั้งตรงแบบก็อดซิลล่า) ตามที่บรรพชีวินวิทยาสมัยใหม่เชื่อ
- *
- * @param legs [ขาหน้า, ขาหลัง] — ค่ายิ่งมากยิ่งยกขาสูง
- * @param mouthOpen อ้าปากกว้างแค่ไหน (px)
+ * ไทรันโนซอรัส เร็กซ์ สไตล์ Chibi Kawaii น่ารักน่าเอ็นดู
+ *   - ตาโตประกายวิ้ง 2 จุด
+ *   - แก้มชมพูระเรื่อ
+ *   - หนามสีส้มคอรัลทรงมน
+ *   - ลำตัวอวบอ้วนกลมมนน่ารัก
  */
 function trexBase(
   g: Phaser.GameObjects.Graphics,
@@ -87,87 +86,93 @@ function trexBase(
 ): void {
   const [frontLeg, backLeg] = legs;
 
-  /* ---- หาง: หนาโคน เรียวปลาย ยื่นตรงไปหลัง ---- */
+  /* ---- หาง: กลมมน น่ารัก ---- */
   g.fillStyle(C.bodyDark, 1);
-  g.fillTriangle(0, 30, 26, 22, 26, 38);
-  g.fillEllipse(24, 30, 18, 18);
+  g.fillTriangle(0, 31, 26, 20, 26, 38);
+  g.fillEllipse(22, 29, 20, 18);
 
-  /* ---- ขาหลัง (อยู่หลังลำตัว จึงเข้มกว่า) ---- */
+  /* ---- หนามบนหาง ---- */
+  g.fillStyle(C.crest, 1);
+  g.fillTriangle(6, 21, 12, 16, 15, 23);
+  g.fillTriangle(16, 18, 21, 12, 24, 20);
+
+  /* ---- ขาหลัง (อยู่ด้านหลัง) ---- */
   g.fillStyle(C.bodyDarker, 1);
-  g.fillEllipse(26, 36 - backLeg * 0.4, 20, 24); // ต้นขาใหญ่
-  g.fillRoundedRect(23, 44 - backLeg, 8, 12 + backLeg * 0.5, 4);
-  g.fillRoundedRect(19, 52 - backLeg, 15, 6, 3); // เท้า
+  g.fillEllipse(26, 36 - backLeg * 0.4, 20, 24); // ต้นขาอวบ
+  g.fillRoundedRect(22, 43 - backLeg, 9, 13 + backLeg * 0.5, 4);
+  g.fillRoundedRect(18, 51 - backLeg, 16, 6, 3); // เท้า
+  g.fillStyle(C.tooth, 1);
+  g.fillCircle(32, 53 - backLeg, 2.5); // เล็บเท้าจิ๋ว
 
-  /* ---- ลำตัว ---- */
+  /* ---- ลำตัวอวบกลม ---- */
   g.fillStyle(C.body, 1);
-  g.fillEllipse(35, 30, 40, 28);
+  g.fillEllipse(36, 30, 42, 30);
 
-  /* ---- ท้องสีอ่อน ---- */
+  /* ---- ท้องสีครีม ---- */
   g.fillStyle(C.belly, 1);
-  g.fillEllipse(37, 37, 28, 14);
+  g.fillEllipse(38, 36, 28, 16);
 
-  /* ---- ลายบนหลัง ---- */
-  g.fillStyle(C.crest, 0.85);
-  g.fillEllipse(28, 20, 9, 5);
-  g.fillEllipse(38, 18, 9, 5);
-  g.fillEllipse(47, 19, 8, 5);
+  /* ---- หนามบนหลัง 3 อัน ---- */
+  g.fillStyle(C.crest, 1);
+  g.fillTriangle(26, 17, 31, 10, 35, 19);
+  g.fillTriangle(34, 15, 39, 8, 43, 17);
+  g.fillTriangle(42, 14, 47, 8, 50, 16);
 
-  /* ---- คอ ---- */
+  /* ---- คอและหัว ---- */
   g.fillStyle(C.body, 1);
-  g.fillRoundedRect(45, 12, 14, 20, 7);
+  g.fillRoundedRect(44, 10, 16, 22, 8); // คอ
+  g.fillRoundedRect(45, 4, 26, 20, 9); // กะโหลกกลมโต
+  g.fillRoundedRect(57, 10, 16, 11, 4); // ปากบน
 
-  /* ---- หัว: กะโหลกใหญ่ + ขากรรไกรยาว ---- */
-  g.fillStyle(C.body, 1);
-  g.fillRoundedRect(47, 6, 24, 17, 7); // กะโหลก
-  g.fillRoundedRect(58, 12, 15, 9, 3); // ปากบน
+  // ฟันน่ารัก 2 ซี่
+  teeth(g, [61, 67], 20, 3.5);
 
-  // ฟันบน
-  teeth(g, [60, 65, 69], 21);
-
-  // ในปาก
-  g.fillStyle(0x7a3348, 1);
-  g.fillRoundedRect(57, 21, 16, mouthOpen, 1.5);
+  // ปากด้านใน + ลิ้นสีชมพู
+  g.fillStyle(0x8c3b52, 1);
+  g.fillRoundedRect(56, 20, 16, mouthOpen + 1, 2);
+  g.fillStyle(0xff7096, 1);
+  g.fillCircle(62, 21 + mouthOpen * 0.5, 2.5);
 
   // ขากรรไกรล่าง
   g.fillStyle(C.bodyDark, 1);
-  g.fillRoundedRect(56, 21 + mouthOpen, 16, 7, 3);
-  g.fillStyle(C.tooth, 1);
-  g.fillTriangle(62, 22 + mouthOpen, 65, 22 + mouthOpen, 63.5, 18.5 + mouthOpen);
+  g.fillRoundedRect(55, 20 + mouthOpen, 16, 7, 3.5);
 
-  /* ---- คิ้ว/สันเหนือตา ทำให้ดูดุแบบการ์ตูน ---- */
-  g.fillStyle(C.bodyDarker, 1);
-  g.fillTriangle(52, 9, 64, 7, 64, 11);
+  /* ---- แก้มชมพูพาสเทลน่ารัก (Kawaii Blush) ---- */
+  g.fillStyle(C.blush, 0.85);
+  g.fillCircle(54, 20, 4.5);
 
-  /* ---- ตา ---- */
+  /* ---- ดวงตาอนิเมะกลมโต (Kawaii Eyes) ---- */
   g.fillStyle(C.eye, 1);
-  g.fillCircle(58, 13, 4);
+  g.fillCircle(58, 11, 5.5); // ตาขาวใหญ่
   g.fillStyle(C.pupil, 1);
-  g.fillCircle(59.5, 13, 2.1);
-  g.fillStyle(C.eye, 0.9);
-  g.fillCircle(58.6, 12, 1);
+  g.fillCircle(59.5, 11, 3.5); // ตาดำใหญ่
+  // ประกายวิ้งตา 2 จุด
+  g.fillStyle(C.sparkle, 1);
+  g.fillCircle(58.2, 9.5, 1.6);
+  g.fillCircle(61, 12.2, 0.9);
 
-  /* ---- รูจมูก ---- */
-  g.fillStyle(C.bodyDarker, 1);
-  g.fillCircle(70, 15, 1.2);
+  /* ---- รูจมูกจิ๋ว ---- */
+  g.fillStyle(C.bodyDarker, 0.7);
+  g.fillCircle(70, 13, 1.2);
 
-  /* ---- แขนจิ๋ว (เอกลักษณ์ของ T-Rex) ---- */
+  /* ---- แขนจิ๋วน่ารัก (Front Tiny Arm) ---- */
   g.fillStyle(C.bodyDark, 1);
-  g.fillRoundedRect(46, 29, 10, 5, 2.5);
+  g.fillRoundedRect(45, 28, 10, 6, 3);
   g.fillStyle(C.tooth, 1);
-  g.fillTriangle(55, 29, 59, 30.5, 55, 32);
-  g.fillTriangle(55, 32, 58, 33.5, 55, 34.5);
+  g.fillCircle(54, 30, 2); // กรงเล็บจิ๋ว
 
-  /* ---- ขาหน้า (อยู่หน้าลำตัว จึงสว่างกว่า) ---- */
+  /* ---- ขาหน้า (สว่างกว่า) ---- */
   g.fillStyle(C.body, 1);
-  g.fillEllipse(40, 37 - frontLeg * 0.4, 21, 25); // ต้นขาใหญ่
-  g.fillRoundedRect(38, 45 - frontLeg, 9, 11 + frontLeg * 0.5, 4);
-  g.fillStyle(C.crest, 1);
-  g.fillRoundedRect(33, 52 - frontLeg, 17, 6, 3); // เท้า
+  g.fillEllipse(40, 37 - frontLeg * 0.4, 21, 25);
+  g.fillRoundedRect(37, 44 - frontLeg, 10, 12 + frontLeg * 0.5, 4);
+  g.fillStyle(C.bodyDark, 1);
+  g.fillRoundedRect(33, 51 - frontLeg, 17, 6, 3.5);
   g.fillStyle(C.tooth, 1);
-  g.fillTriangle(50, 53 - frontLeg, 53, 55 - frontLeg, 50, 57 - frontLeg); // เล็บ
+  g.fillCircle(49, 53 - frontLeg, 2.5); // เล็บเท้า
 }
 
 export function createTextures(scene: Phaser.Scene): void {
+
   /* ---------------- ไทรันโนซอรัส เร็กซ์ ---------------- */
   bake(scene, 'dino_run_0', TREX_W, TREX_H, (g) => trexBase(g, [1, 7], 3));
   bake(scene, 'dino_run_1', TREX_W, TREX_H, (g) => trexBase(g, [7, 1], 2));
@@ -323,6 +328,61 @@ export function createTextures(scene: Phaser.Scene): void {
     g.fillEllipse(66, 66, 44, 34);
   });
 
+  /* ---------------- ไอเทมเก็บสะสมคะแนน ---------------- */
+  bake(scene, 'star_gem', 32, 32, (g) => {
+    g.fillStyle(C.gemGlow, 0.4);
+    g.fillCircle(16, 16, 16);
+    g.fillStyle(C.gem, 1);
+    g.fillTriangle(16, 3, 12, 14, 20, 14);
+    g.fillTriangle(16, 29, 12, 18, 20, 18);
+    g.fillTriangle(3, 16, 14, 12, 14, 20);
+    g.fillTriangle(29, 16, 18, 12, 18, 20);
+    g.fillStyle(0xffffff, 0.9);
+    g.fillCircle(13, 11, 2.5);
+  });
+
+  /* ---------------- ของตกแต่งฉากด่าน ---------------- */
+  bake(scene, 'flower', 24, 24, (g) => {
+    g.fillStyle(0xff9ebb, 1);
+    g.fillCircle(7, 12, 5);
+    g.fillCircle(17, 12, 5);
+    g.fillCircle(12, 7, 5);
+    g.fillCircle(12, 17, 5);
+    g.fillStyle(0xffe875, 1);
+    g.fillCircle(12, 12, 4);
+  });
+
+  bake(scene, 'shroom', 24, 28, (g) => {
+    g.fillStyle(0xfff7d6, 1);
+    g.fillRoundedRect(9, 14, 6, 14, 3);
+    g.fillStyle(0xff6b6b, 1);
+    g.fillEllipse(12, 12, 22, 16);
+    g.fillStyle(0xffffff, 0.9);
+    g.fillCircle(8, 9, 2.2);
+    g.fillCircle(16, 8, 2.2);
+    g.fillCircle(12, 13, 1.8);
+  });
+
+  bake(scene, 'fossil', 32, 24, (g) => {
+    g.fillStyle(0xd9c2ad, 0.85);
+    g.fillEllipse(16, 12, 28, 18);
+    g.fillStyle(0x35224a, 0.6);
+    g.fillCircle(10, 10, 3.5); // กระบอกตา
+    g.fillCircle(20, 14, 2.5); // รูจมูก
+  });
+
+  bake(scene, 'crystal', 28, 34, (g) => {
+    g.fillStyle(0x8ab6f9, 0.4);
+    g.fillCircle(14, 17, 15);
+    g.fillStyle(0x8ab6f9, 0.95);
+    g.fillTriangle(14, 2, 7, 26, 21, 26);
+    g.fillStyle(0xc9a7f5, 0.9);
+    g.fillTriangle(7, 10, 2, 30, 14, 30);
+    g.fillTriangle(21, 12, 14, 32, 26, 32);
+    g.fillStyle(0xffffff, 0.7);
+    g.fillTriangle(14, 2, 10, 16, 14, 20);
+  });
+
   /* ---------------- กำแพงวันสิ้นโลก ---------------- */
   bake(scene, 'lava_edge', 24, 240, (g) => {
     // ไล่เฉดจากขอบ (สว่าง) เข้าไปในกำแพง (แดงเข้ม)
@@ -338,3 +398,4 @@ export function createTextures(scene: Phaser.Scene): void {
     }
   });
 }
+

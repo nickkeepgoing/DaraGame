@@ -34,7 +34,10 @@ export class GameScene extends Phaser.Scene {
   private obstacles!: Phaser.Physics.Arcade.Group;
   private meteors!: Phaser.Physics.Arcade.Group;
   private gates!: Phaser.Physics.Arcade.Group;
+  private gems!: Phaser.Physics.Arcade.Group;
+  private decors!: Phaser.GameObjects.Group;
   private groundGroup!: Phaser.Physics.Arcade.StaticGroup;
+
 
   /* ---------------- ตัวละคร ---------------- */
   private player!: ArcadeSprite;
@@ -254,6 +257,18 @@ export class GameScene extends Phaser.Scene {
       allowGravity: false,
       immovable: true,
     });
+
+    this.gems = this.physics.add.group({
+      classType: Phaser.Physics.Arcade.Sprite,
+      maxSize: 32,
+      allowGravity: false,
+      immovable: true,
+    });
+
+    this.decors = this.add.group({
+      classType: Phaser.GameObjects.Sprite,
+      maxSize: 64,
+    });
   }
 
   private buildPlayer(): void {
@@ -280,6 +295,8 @@ export class GameScene extends Phaser.Scene {
       this.onMeteorHit(m as ArcadeSprite),
     );
     this.physics.add.overlap(this.player, this.gates, (_p, g) => this.onGateReached(g as ArcadeSprite));
+    this.physics.add.overlap(this.player, this.gems, (_p, g) => this.onGemCollect(g as ArcadeSprite));
+
 
     // ฝุ่นใต้เท้าตอนวิ่ง
     this.add
@@ -434,6 +451,23 @@ export class GameScene extends Phaser.Scene {
       if (!this.isReserved(ox)) this.spawnObstacle(ox);
       this.nextObstacleX = ox + Math.max(spacing * this.rng.range(0.75, 1.35), minGap);
     }
+
+    // --- ดาวสะสมคะแนน (Star Gems) ---
+    if (this.rng.chance(0.65)) {
+      const gemX = left + this.rng.range(60, width - 120);
+      if (!this.isReserved(gemX)) {
+        const gemY = this.rng.chance(0.5) ? GROUND_Y - 24 : GROUND_Y - 75;
+        this.spawnGem(gemX, gemY);
+      }
+    }
+
+    // --- ของตกแต่งบนพื้นฉาก (Decor Props) ---
+    for (let dx = 80; dx < width - 60; dx += this.rng.range(140, 220)) {
+      const decX = x + dx;
+      if (!this.isReserved(decX)) {
+        this.spawnDecor(decX);
+      }
+    }
   }
 
   private isReserved(x: number): boolean {
@@ -452,12 +486,66 @@ export class GameScene extends Phaser.Scene {
     const body = sprite.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
 
-    // ย่อ hitbox ให้เล็กกว่าภาพเล็กน้อย — ชนแล้วต้อง "รู้สึกว่าโดนจริง"
-    // ไม่ใช่โดนตั้งแต่ยังไม่แตะ ซึ่งเป็นสาเหตุอันดับหนึ่งที่ผู้เล่นด่าเกมว่าโกง
     const w = sprite.width * 0.62;
     const h = sprite.height * 0.72;
     body.setSize(w, h);
     body.setOffset((sprite.width - w) / 2, sprite.height - h);
+  }
+
+  private spawnGem(x: number, y: number): void {
+    const sprite = this.gems.get(x, y, 'star_gem') as ArcadeSprite | null;
+    if (!sprite) return;
+
+    sprite.setTexture('star_gem');
+    sprite.enableBody(true, x, y, true, true);
+    sprite.setOrigin(0.5, 0.5).setDepth(6);
+    (sprite.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
+    sprite.setData('collected', false);
+
+    this.tweens.killTweensOf(sprite);
+    this.tweens.add({
+      targets: sprite,
+      y: y - 6,
+      duration: 650,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+  }
+
+  private spawnDecor(x: number): void {
+    const stageKeys =
+      this.stage === 1
+        ? ['flower', 'shroom']
+        : this.stage === 2
+        ? ['fossil', 'shroom']
+        : ['crystal', 'fossil'];
+    const key = this.rng.pick(stageKeys);
+    const sprite = this.decors.get(x, GROUND_Y, key) as Phaser.GameObjects.Sprite | null;
+    if (!sprite) return;
+
+    sprite.setTexture(key);
+    sprite.setActive(true).setVisible(true);
+    sprite.setPosition(x, GROUND_Y);
+    sprite.setOrigin(0.5, 1).setDepth(4);
+  }
+
+  private onGemCollect(gem: ArcadeSprite): void {
+    if (!gem.active || gem.getData('collected')) return;
+    gem.setData('collected', true);
+    gem.disableBody(true, true);
+    sfx.correct();
+    this.distanceM += 15;
+    this.floatText('+15m 🌟', 0xffd700);
+
+
+    const emitter = this.add.particles(gem.x, gem.y, 'sparkle', {
+      speed: { min: 40, max: 120 },
+      scale: { start: 0.8, end: 0 },
+      lifespan: 350,
+      quantity: 6,
+    });
+    this.time.delayedCall(400, () => emitter.destroy());
   }
 
   private spawnGate(x: number): void {
@@ -470,8 +558,6 @@ export class GameScene extends Phaser.Scene {
     (sprite.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
     sprite.setData('used', false);
 
-    // sprite ตัวนี้ถูก recycle มา — ถ้าไม่ล้าง tween เก่าก่อน มันจะซ้อนกันเรื่อยๆ
-    // เล่นไป 2 นาทีก็มี tween วิ่งพร้อมกันหลายสิบตัวโดยไม่มีใครเห็น
     this.tweens.killTweensOf(sprite);
     this.tweens.add({
       targets: sprite,
@@ -493,11 +579,11 @@ export class GameScene extends Phaser.Scene {
     sprite.setDepth(12);
 
     const body = sprite.body as Phaser.Physics.Arcade.Body;
-    // ความเร็วคงที่ ไม่ใช้แรงโน้มถ่วง — ตกด้วยจังหวะเดิมทุกครั้ง ผู้เล่นอ่านเกมได้
     body.setAllowGravity(false);
     body.setVelocity(this.rng.range(-90, -20), this.rng.range(380, 470));
     body.setCircle(13, 6, 6);
   }
+
 
   /* ================================================================
      ลูปหลัก
@@ -728,7 +814,15 @@ export class GameScene extends Phaser.Scene {
     this.appliedStage = stage;
     const biome = this.stageConfig(stage);
 
-    // เปลี่ยนสีฟ้าแบบนุ่มๆ ไม่ใช่ตัดฉับ
+    // สีฉากตามธีมด่าน
+    const hillTints = [0x4a6b57, 0x662a34, 0x402b5e];
+    const treeTints = [0x2b4e3a, 0x4a1c25, 0x27183e];
+    const idx = Math.min(Math.max(stage - 1, 0), 2);
+
+    if (this.hills) this.hills.setTint(hillTints[idx]);
+    if (this.trees) this.trees.setTint(treeTints[idx]);
+
+    // เปลี่ยนสีท้องฟ้าแบบนุ่มนวล
     this.tweens.addCounter({
       from: 0,
       to: 1,
@@ -743,6 +837,7 @@ export class GameScene extends Phaser.Scene {
     });
     this.skyGlow.setFillStyle(biome.skyBottom, 0.85);
   }
+
 
   /* ================================================================
      เหตุการณ์
