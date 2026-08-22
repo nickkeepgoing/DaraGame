@@ -16,6 +16,7 @@ interface Props {
  */
 export function LoginScreen({ onDone }: Props) {
   const setSession = useGameStore((s) => s.setSession);
+  const setScreen = useGameStore((s) => s.setScreen);
   const [nickname, setNickname] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [busy, setBusy] = useState(false);
@@ -98,10 +99,21 @@ export function LoginScreen({ onDone }: Props) {
           </button>
         </form>
 
-        <p className="mt-5 text-center text-xs text-white/35">
+        <div className="mt-6 border-t border-white/10 pt-4 text-center">
+          <button
+            type="button"
+            onClick={() => setScreen('teacher')}
+            className="inline-flex items-center gap-2 text-sm font-medium text-amber-400 hover:text-amber-300 transition-colors"
+          >
+            <span>👨‍🏫 เข้าใช้งานระบบจัดการสำหรับครูผู้สอน (Teacher Portal)</span>
+          </button>
+        </div>
+
+        <p className="mt-3 text-center text-xs text-white/35">
           เก็บแค่ชื่อเล่นเท่านั้น ไม่เก็บชื่อจริงหรือข้อมูลส่วนตัวใดๆ
         </p>
       </div>
     </div>
   );
 }
+

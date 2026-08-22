@@ -96,7 +96,15 @@ export function HowToPlayScreen({ busy, error, nickname, onStart, onLeaderboard 
           <button onClick={onLeaderboard} className="btn-ghost rounded-xl px-6 py-3.5">
             🏆 กระดานคะแนน
           </button>
+          <button
+            onClick={() => useGameStore.getState().setScreen('teacher')}
+            className="btn-ghost rounded-xl px-4 py-3.5 text-amber-400 hover:text-amber-300"
+            title="หน้าจัดการสำหรับครู"
+          >
+            👨‍🏫 ครู
+          </button>
         </div>
+
 
         <IosHomeScreenHint />
       </div>

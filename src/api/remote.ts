@@ -229,4 +229,112 @@ export const remoteApi = {
       correctCount: r.correct_count,
     }));
   },
+
+  /* ---------------- Teacher Operations (Supabase Mode) ---------------- */
+  async getTeacherClasses(): Promise<import('@/types/game').TeacherClass[]> {
+    const { data, error } = await client()
+      .from('classes')
+      .select('id, join_code, name, is_open, level_seed, created_at, players(count)')
+      .order('created_at', { ascending: false });
+
+    if (error) throw new Error(error.message);
+
+    return (data ?? []).map((row: any) => ({
+      id: row.id,
+      joinCode: row.join_code,
+      name: row.name,
+      isOpen: row.is_open,
+      levelSeed: row.level_seed ? Number(row.level_seed) : null,
+      createdAt: row.created_at,
+      studentCount: row.players?.[0]?.count ?? 0,
+    }));
+  },
+
+  async createClass(
+    name: string,
+    joinCode: string,
+    levelSeed?: number | null,
+  ): Promise<import('@/types/game').TeacherClass> {
+    const { data, error } = await client().rpc('teacher_create_class', {
+      p_name: name,
+      p_join_code: joinCode,
+      p_level_seed: levelSeed ?? null,
+    });
+    if (error) throw new Error(error.message);
+
+    const row = data as any;
+    return {
+      id: row.id,
+      joinCode: row.join_code,
+      name: row.name,
+      isOpen: row.is_open,
+      levelSeed: row.level_seed ? Number(row.level_seed) : null,
+      createdAt: row.created_at,
+    };
+  },
+
+  async updateClass(
+    classId: string,
+    isOpen: boolean,
+    levelSeed?: number | null,
+  ): Promise<import('@/types/game').TeacherClass> {
+    const { data, error } = await client().rpc('teacher_update_class', {
+      p_class_id: classId,
+      p_is_open: isOpen,
+      p_level_seed: levelSeed ?? null,
+    });
+    if (error) throw new Error(error.message);
+
+    const row = data as any;
+    return {
+      id: row.id,
+      joinCode: row.join_code,
+      name: row.name,
+      isOpen: row.is_open,
+      levelSeed: row.level_seed ? Number(row.level_seed) : null,
+      createdAt: row.created_at,
+    };
+  },
+
+  async getStudentProgress(classId?: string | null): Promise<import('@/types/game').StudentProgress[]> {
+    let query = client().from('player_progress').select('*');
+    if (classId) query = query.eq('class_id', classId);
+
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+
+    return (data ?? []).map((row: any) => ({
+      playerId: row.player_id,
+      nickname: row.nickname,
+      classId: row.class_id,
+      runsPlayed: Number(row.runs_played ?? 0),
+      bestScore: Number(row.best_score ?? 0),
+      totalCorrect: Number(row.total_correct ?? 0),
+      totalWrong: Number(row.total_wrong ?? 0),
+      pctCorrect: row.pct_correct !== null ? Number(row.pct_correct) : null,
+      bestDistanceM: Number(row.best_distance_m ?? 0),
+      lastPlayedAt: row.last_played_at,
+    }));
+  },
+
+  async getQuestionStats(): Promise<import('@/types/game').QuestionStat[]> {
+    const { data, error } = await client()
+      .from('question_stats')
+      .select('*')
+      .order('pct_correct', { ascending: true, nullsFirst: false });
+
+    if (error) throw new Error(error.message);
+
+    return (data ?? []).map((row: any) => ({
+      id: row.id,
+      stem: row.stem,
+      difficulty: row.difficulty,
+      topic: row.topic,
+      attempts: Number(row.attempts ?? 0),
+      correctCount: Number(row.correct_count ?? 0),
+      pctCorrect: row.pct_correct !== null ? Number(row.pct_correct) : null,
+      avgMs: row.avg_ms !== null ? Number(row.avg_ms) : null,
+    }));
+  },
 };
+

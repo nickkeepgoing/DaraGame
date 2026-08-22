@@ -68,4 +68,39 @@ export const api = {
   async leaderboard(limit = 20, classId?: string | null): Promise<LeaderboardRow[]> {
     return isOffline ? localApi.leaderboard(limit) : remoteApi.leaderboard(limit, classId);
   },
+
+  async getTeacherClasses(): Promise<import('@/types/game').TeacherClass[]> {
+    return isOffline ? localApi.getTeacherClasses() : remoteApi.getTeacherClasses();
+  },
+
+  async createClass(
+    name: string,
+    joinCode: string,
+    levelSeed?: number | null,
+  ): Promise<import('@/types/game').TeacherClass> {
+    return isOffline
+      ? localApi.createClass(name, joinCode, levelSeed)
+      : remoteApi.createClass(name, joinCode, levelSeed);
+  },
+
+  async updateClass(
+    classId: string,
+    isOpen: boolean,
+    levelSeed?: number | null,
+  ): Promise<import('@/types/game').TeacherClass> {
+    return isOffline
+      ? localApi.updateClass(classId, isOpen, levelSeed)
+      : remoteApi.updateClass(classId, isOpen, levelSeed);
+  },
+
+  async getStudentProgress(classId?: string | null): Promise<import('@/types/game').StudentProgress[]> {
+    return isOffline
+      ? localApi.getStudentProgress(classId)
+      : remoteApi.getStudentProgress(classId);
+  },
+
+  async getQuestionStats(): Promise<import('@/types/game').QuestionStat[]> {
+    return isOffline ? localApi.getQuestionStats() : remoteApi.getQuestionStats();
+  },
 };
+

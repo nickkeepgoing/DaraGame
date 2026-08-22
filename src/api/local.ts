@@ -239,4 +239,144 @@ export const localApi = {
       .slice(0, limit)
       .map((s, i) => ({ rank: i + 1, ...s }));
   },
+
+  /* ---------------- Teacher Operations (Offline Mode) ---------------- */
+  async getTeacherClasses(): Promise<import('@/types/game').TeacherClass[]> {
+    try {
+      const raw = localStorage.getItem('daragame.local.classes');
+      if (raw) return JSON.parse(raw);
+    } catch {
+      /* fallback to defaults */
+    }
+    const defaults: import('@/types/game').TeacherClass[] = [
+      {
+        id: 'local-c1',
+        joinCode: 'M4-1-ASTRO',
+        name: 'ม.4/1 โลก ดาราศาสตร์ฯ',
+        isOpen: true,
+        levelSeed: 12345,
+        createdAt: new Date().toISOString(),
+        studentCount: 12,
+      },
+      {
+        id: 'local-c2',
+        joinCode: 'M4-2-ASTRO',
+        name: 'ม.4/2 โลก ดาราศาสตร์ฯ',
+        isOpen: false,
+        levelSeed: null,
+        createdAt: new Date().toISOString(),
+        studentCount: 8,
+      },
+    ];
+    localStorage.setItem('daragame.local.classes', JSON.stringify(defaults));
+    return defaults;
+  },
+
+  async createClass(
+    name: string,
+    joinCode: string,
+    levelSeed?: number | null,
+  ): Promise<import('@/types/game').TeacherClass> {
+    const classes = await this.getTeacherClasses();
+    const newClass: import('@/types/game').TeacherClass = {
+      id: `local-c-${Date.now()}`,
+      joinCode: joinCode.toUpperCase().trim(),
+      name: name.trim(),
+      isOpen: true,
+      levelSeed: levelSeed ?? null,
+      createdAt: new Date().toISOString(),
+      studentCount: 0,
+    };
+    classes.unshift(newClass);
+    localStorage.setItem('daragame.local.classes', JSON.stringify(classes));
+    return newClass;
+  },
+
+  async updateClass(
+    classId: string,
+    isOpen: boolean,
+    levelSeed?: number | null,
+  ): Promise<import('@/types/game').TeacherClass> {
+    const classes = await this.getTeacherClasses();
+    const target = classes.find((c) => c.id === classId);
+    if (!target) throw new Error('ไม่พบห้องเรียนนี้');
+    target.isOpen = isOpen;
+    target.levelSeed = levelSeed ?? null;
+    localStorage.setItem('daragame.local.classes', JSON.stringify(classes));
+    return target;
+  },
+
+  async getStudentProgress(classId?: string | null): Promise<import('@/types/game').StudentProgress[]> {
+    const scores = readScores();
+    if (scores.length > 0) {
+      return scores.map((s) => ({
+        playerId: s.playerId,
+        nickname: s.nickname,
+        classId: classId ?? 'local-c1',
+        runsPlayed: 1,
+        bestScore: s.totalScore,
+        totalCorrect: s.correctCount,
+        totalWrong: 0,
+        pctCorrect: 100,
+        bestDistanceM: s.distanceM,
+        lastPlayedAt: new Date().toISOString(),
+      }));
+    }
+    return [
+      {
+        playerId: 'p1',
+        nickname: 'น้องไดโน',
+        classId: classId ?? 'local-c1',
+        runsPlayed: 5,
+        bestScore: 2450,
+        totalCorrect: 18,
+        totalWrong: 2,
+        pctCorrect: 90,
+        bestDistanceM: 420,
+        lastPlayedAt: new Date().toISOString(),
+      },
+      {
+        playerId: 'p2',
+        nickname: 'ทีเร็กซ์สายสปีด',
+        classId: classId ?? 'local-c1',
+        runsPlayed: 3,
+        bestScore: 1980,
+        totalCorrect: 12,
+        totalWrong: 4,
+        pctCorrect: 75,
+        bestDistanceM: 350,
+        lastPlayedAt: new Date().toISOString(),
+      },
+      {
+        playerId: 'p3',
+        nickname: 'ดาวเสาร์น่ารัก',
+        classId: classId ?? 'local-c1',
+        runsPlayed: 2,
+        bestScore: 1420,
+        totalCorrect: 8,
+        totalWrong: 5,
+        pctCorrect: 61.5,
+        bestDistanceM: 280,
+        lastPlayedAt: new Date().toISOString(),
+      },
+    ];
+  },
+
+  async getQuestionStats(): Promise<import('@/types/game').QuestionStat[]> {
+    return BANK.slice(0, 15).map((q, idx) => {
+      const attempts = 15 + (idx * 3) % 20;
+      const correctCount = Math.floor(attempts * (0.5 + (idx % 5) * 0.1));
+      return {
+        id: qid(idx),
+        stem: q.stem,
+        difficulty: q.difficulty,
+        topic: q.topic,
+        attempts,
+        correctCount,
+        pctCorrect: Math.round((correctCount / attempts) * 100),
+        avgMs: 2500 + (idx * 300) % 4000,
+      };
+    });
+  },
 };
+

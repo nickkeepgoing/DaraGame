@@ -12,7 +12,9 @@ import { CountdownOverlay } from '@/ui/screens/CountdownOverlay';
 import { GameOverScreen } from '@/ui/screens/GameOverScreen';
 import { LeaderboardScreen } from '@/ui/screens/LeaderboardScreen';
 import { RotateGateScreen } from '@/ui/screens/RotateGateScreen';
+import { TeacherDashboardScreen } from '@/ui/screens/TeacherDashboardScreen';
 import { Hud } from '@/ui/hud/Hud';
+
 import { QuizModal } from '@/ui/quiz/QuizModal';
 import { TouchControls } from '@/ui/components/TouchControls';
 import { RotateNotice } from '@/ui/components/RotateNotice';
@@ -173,14 +175,17 @@ export default function App() {
 
       {screen === 'leaderboard' && <LeaderboardScreen onBack={quitToMenu} />}
 
+      {screen === 'teacher' && <TeacherDashboardScreen onBack={quitToMenu} />}
+
       {(screen === 'playing' || screen === 'countdown') && <RotateNotice />}
       {import.meta.env.DEV && <DebugPanel />}
 
-      {isOffline && screen !== 'playing' && (
+      {isOffline && screen !== 'playing' && screen !== 'teacher' && (
         <div className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-night-800/80 px-4 py-1 text-xs text-dusk-200">
           โหมดออฟไลน์ — คะแนนเก็บในเครื่องนี้เท่านั้น (ยังไม่ได้ตั้งค่า Supabase)
         </div>
       )}
+
     </div>
   );
 }

@@ -3,7 +3,8 @@
 --  รัน:  supabase db reset   หรือ  paste ลง SQL Editor
 -- =====================================================================
 
-create extension if not exists pgcrypto;
+create extension if not exists pgcrypto with schema extensions;
+create extension if not exists pgcrypto with schema public;
 
 -- ---------------------------------------------------------------------
 -- 1. ห้องเรียน

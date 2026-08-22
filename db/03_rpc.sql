@@ -13,7 +13,7 @@ create or replace function join_class(
   p_nickname  text,
   p_pin       text default null
 ) returns players
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, extensions as $$
 declare
   v_class   classes%rowtype;
   v_player  players%rowtype;
@@ -58,7 +58,7 @@ end $$;
 -- ---------------------------------------------------------------------
 create or replace function start_run(p_client_version text default null)
 returns table (run_id uuid, seed bigint)
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, extensions as $$
 declare
   v_player players%rowtype;
   v_seed   bigint;
@@ -105,7 +105,7 @@ create or replace function next_question(
   p_kind   text default 'main',
   p_stage  smallint default null
 ) returns setof public_questions
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, extensions as $$
 declare
   v_role question_role := p_kind::question_role;
 begin
@@ -145,7 +145,7 @@ create or replace function answer_question(
   p_choice_id   uuid,          -- null = หมดเวลา
   p_time_ms     integer
 ) returns jsonb
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, extensions as $$
 declare
   -- ===== ต้องตรงกับ balance.ts =====
   c_base       constant jsonb := '{"easy":15,"medium":30,"hard":60}';
@@ -228,7 +228,7 @@ create or replace function finish_run(
   p_hearts_left smallint,
   p_end_reason  text
 ) returns runs
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, extensions as $$
 declare
   -- ===== ต้องตรงกับ balance.ts =====
   c_pts_per_m    constant numeric := 0.5;
@@ -309,6 +309,63 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
+-- teacher_create_class — สร้างห้องเรียนใหม่สำหรับครู
+-- ---------------------------------------------------------------------
+create or replace function teacher_create_class(
+  p_name       text,
+  p_join_code  text,
+  p_level_seed bigint default null
+) returns classes
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  v_class classes%rowtype;
+  v_code  text := upper(btrim(p_join_code));
+begin
+  if auth.uid() is null then
+    raise exception 'ต้องเข้าสู่ระบบก่อน' using errcode = '28000';
+  end if;
+
+  if exists (select 1 from classes where join_code = v_code) then
+    raise exception 'รหัสห้องเรียนนี้ถูกใช้งานแล้ว โปรดใช้รหัสอื่น' using errcode = '23505';
+  end if;
+
+  insert into classes (name, join_code, teacher_id, level_seed, is_open)
+  values (btrim(p_name), v_code, auth.uid(), p_level_seed, true)
+  returning * into v_class;
+
+  return v_class;
+end $$;
+
+-- ---------------------------------------------------------------------
+-- teacher_update_class — แก้ไขสถานะห้องเรียน (เปิด/ปิด, เปลี่ยน seed)
+-- ---------------------------------------------------------------------
+create or replace function teacher_update_class(
+  p_class_id   uuid,
+  p_is_open    boolean,
+  p_level_seed bigint default null
+) returns classes
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  v_class classes%rowtype;
+begin
+  if auth.uid() is null then
+    raise exception 'ต้องเข้าสู่ระบบก่อน' using errcode = '28000';
+  end if;
+
+  update classes
+     set is_open    = p_is_open,
+         level_seed = p_level_seed
+   where id = p_class_id and teacher_id = auth.uid()
+  returning * into v_class;
+
+  if not found then
+    raise exception 'ไม่พบห้องเรียนนี้ หรือไม่มีสิทธิ์แก้ไข' using errcode = 'P0002';
+  end if;
+
+  return v_class;
+end $$;
+
+-- ---------------------------------------------------------------------
 -- GRANTS
 -- ---------------------------------------------------------------------
 revoke execute on all functions in schema public from public, anon;
@@ -318,3 +375,7 @@ grant execute on function start_run(text)                              to authen
 grant execute on function next_question(uuid, text, smallint)          to authenticated;
 grant execute on function answer_question(uuid, uuid, uuid, integer)   to authenticated;
 grant execute on function finish_run(uuid, integer, smallint, text)    to authenticated;
+
+grant execute on function teacher_create_class(text, text, bigint)     to authenticated;
+grant execute on function teacher_update_class(uuid, boolean, bigint) to authenticated;
+

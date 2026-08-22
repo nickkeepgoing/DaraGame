@@ -20,7 +20,43 @@ export type Screen =
   | 'countdown'
   | 'playing'
   | 'gameover'
-  | 'leaderboard';
+  | 'leaderboard'
+  | 'teacher';
+
+export interface TeacherClass {
+  id: string;
+  joinCode: string;
+  name: string;
+  isOpen: boolean;
+  levelSeed: number | null;
+  createdAt: string;
+  studentCount?: number;
+}
+
+export interface StudentProgress {
+  playerId: string;
+  nickname: string;
+  classId: string | null;
+  runsPlayed: number;
+  bestScore: number;
+  totalCorrect: number;
+  totalWrong: number;
+  pctCorrect: number | null;
+  bestDistanceM: number;
+  lastPlayedAt: string | null;
+}
+
+export interface QuestionStat {
+  id: string;
+  stem: string;
+  difficulty: Difficulty;
+  topic: string;
+  attempts: number;
+  correctCount: number;
+  pctCorrect: number | null;
+  avgMs: number | null;
+}
+
 
 /** ผู้เล่นที่ล็อกอินอยู่ */
 export interface Session {
