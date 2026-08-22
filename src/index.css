@@ -194,6 +194,24 @@ button {
   animation: pop-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+@keyframes score-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 6px) scale(0.8);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(-50%, -6px) scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -26px) scale(1);
+  }
+}
+.animate-score-pop {
+  animation: score-pop 1.2s ease-out forwards;
+}
+
 @keyframes soft-pulse {
   0%,
   100% {

@@ -315,17 +315,152 @@ export function createTextures(scene: Phaser.Scene): void {
     g.fillEllipse(112, 36, 48, 28);
   });
 
-  bake(scene, 'hill', 460, 200, (g) => {
+  // ภูเขาซ้อนชั้น — ชั้นไกลจางกว่า ให้รู้สึกมีระยะลึก
+  bake(scene, 'hill', 520, 210, (g) => {
+    g.fillStyle(0x4a3163, 0.55);
+    g.fillEllipse(90, 150, 320, 210);
+    g.fillEllipse(430, 158, 300, 190);
     g.fillStyle(C.hill, 1);
-    g.fillEllipse(230, 150, 460, 260);
+    g.fillEllipse(255, 176, 420, 250);
+    g.fillEllipse(20, 182, 240, 180);
+    g.fillEllipse(500, 186, 260, 175);
+    // สันเขารับแสงจากขอบฟ้า
+    g.fillStyle(0x8a5f8f, 0.5);
+    g.fillEllipse(255, 168, 400, 210);
+    g.fillStyle(C.hill, 1);
+    g.fillEllipse(255, 184, 400, 210);
   });
 
-  bake(scene, 'tree_far', 90, 150, (g) => {
-    g.fillStyle(0x3d2b52, 1);
-    g.fillRoundedRect(40, 60, 10, 90, 4);
-    g.fillEllipse(45, 46, 84, 62);
-    g.fillEllipse(24, 66, 44, 34);
-    g.fillEllipse(66, 66, 44, 34);
+  /**
+   * แนวพืชยุคดึกดำบรรพ์ — วาดเป็นแถบกว้าง 360 px ที่มีต้นไม้ 4 ทรงไม่ซ้ำกัน
+   *
+   * เดิมเป็นต้นไม้ทรงเดียวกว้าง 90 px พอเอาไป tile ซ้ำ ตาจะจับได้ทันที
+   * ว่าเป็นภาพเดิมวนไปมา แถบกว้างที่มีหลายทรงทำให้จังหวะการซ้ำยาวขึ้น 4 เท่า
+   * และเลือกพืชตามยุคไดโนเสาร์จริง: อะราวคาเรีย เฟิร์นต้น ปรง แปะก๊วย
+   */
+  bake(scene, 'tree_far', 360, 190, (g) => {
+    const FAR = 0x3d2b52;
+    const NEAR = 0x503868;
+    const TIP = 0x6b4a7a;
+
+    /* --- 1) อะราวคาเรีย (สนยุคจูราสสิก) ทรงสามเหลี่ยมซ้อนชั้น --- */
+    g.fillStyle(FAR, 1);
+    g.fillRoundedRect(44, 96, 9, 94, 4);
+    for (let i = 0; i < 5; i++) {
+      const y = 100 - i * 19;
+      const w = 62 - i * 10;
+      g.fillStyle(i % 2 ? NEAR : FAR, 1);
+      g.fillTriangle(48.5, y - 26, 48.5 - w / 2, y, 48.5 + w / 2, y);
+    }
+
+    /* --- 2) เฟิร์นต้น: ลำต้นเรียว ใบแผ่เป็นร่มโค้ง ---
+       เขียนพิกัดปลายใบตรงๆ แทนการคำนวณด้วย trig
+       (สูตรเดิมคำนวณจุดที่สามของสามเหลี่ยมผิด ใบเลยแบนจนมองไม่ออกว่าเป็นใบ) */
+    g.fillStyle(NEAR, 1);
+    g.fillRoundedRect(122, 104, 9, 86, 4);
+
+    const fronds: [number, number][] = [
+      [80, 94], [88, 116], [102, 134],   // ซ้าย: ยาว -> สั้น
+      [172, 94], [164, 116], [150, 134], // ขวา (สมมาตร)
+      [112, 74], [140, 74],              // ใบชูขึ้นกลางยอด
+    ];
+    fronds.forEach(([tx, ty], i) => {
+      g.fillStyle(i % 2 ? NEAR : TIP, 1);
+      // ลิ่มจากยอดลำต้นไปหาปลายใบ ให้โคนใบหนากว่าปลาย
+      g.fillTriangle(126, 104, tx, ty, 126, 124);
+    });
+    // ยอดกลางกลมๆ ปิดรอยต่อโคนใบ
+    g.fillStyle(NEAR, 1);
+    g.fillEllipse(126, 110, 26, 20);
+
+    /* --- 3) ปรง (cycad) ทรงกลมเตี้ยแน่น --- */
+    g.fillStyle(FAR, 1);
+    g.fillRoundedRect(206, 140, 12, 50, 5);
+    g.fillEllipse(212, 138, 78, 46);
+    g.fillStyle(NEAR, 1);
+    g.fillEllipse(212, 132, 58, 34);
+    g.fillStyle(TIP, 0.7);
+    g.fillEllipse(206, 128, 30, 18);
+
+    /* --- 4) แปะก๊วยต้นสูง ทรงพุ่มโปร่ง --- */
+    g.fillStyle(NEAR, 1);
+    g.fillRoundedRect(300, 78, 10, 112, 4);
+    g.fillEllipse(305, 66, 92, 68);
+    g.fillStyle(FAR, 1);
+    g.fillEllipse(281, 84, 52, 40);
+    g.fillEllipse(329, 86, 48, 36);
+    g.fillStyle(TIP, 0.55);
+    g.fillEllipse(305, 52, 54, 30);
+
+    /* --- พุ่มเฟิร์นเตี้ยแทรกช่องว่าง ทำให้ขอบล่างไม่ขาดเป็นท่อนๆ --- */
+    g.fillStyle(FAR, 1);
+    for (const x of [10, 82, 166, 252, 344]) {
+      g.fillEllipse(x, 186, 62, 34);
+    }
+  });
+
+  /**
+   * พุ่มไม้ชั้นหน้า — วิ่งเร็วกว่าชั้นต้นไม้ ทำให้เห็นความลึกชัดขึ้น
+   * สีอุ่นกว่าและเข้มกว่า เพราะอยู่ใกล้ผู้เล่น
+   */
+  bake(scene, 'bush_near', 300, 110, (g) => {
+    const DARK = 0x2f2145;
+    const MID = 0x3f2c5c;
+    g.fillStyle(MID, 1);
+    for (const [x, w, h] of [
+      [30, 110, 78],
+      [120, 90, 58],
+      [205, 120, 86],
+      [285, 80, 54],
+    ] as [number, number, number][]) {
+      g.fillEllipse(x, 96, w, h);
+    }
+    // ใบเฟิร์นแหลมโผล่ขึ้นมาจากพุ่ม
+    g.fillStyle(DARK, 1);
+    for (const [x, h] of [
+      [22, 46],
+      [58, 34],
+      [128, 40],
+      [198, 52],
+      [240, 36],
+      [292, 44],
+    ] as [number, number][]) {
+      g.fillTriangle(x, 96 - h, x - 9, 100, x + 9, 100);
+    }
+  });
+
+  /* ---------------- กล่องปริศนา (กระโดดชนจากข้างล่างแบบมาริโอ) ---------------- */
+  bake(scene, 'box', 46, 46, (g) => {
+    // ตัวกล่องทอง + ขอบเข้ม + หมุดสี่มุม
+    g.fillStyle(0xb5761f, 1);
+    g.fillRoundedRect(0, 0, 46, 46, 6);
+    g.fillStyle(0xf2b33d, 1);
+    g.fillRoundedRect(3, 3, 40, 40, 5);
+    g.fillStyle(0xffd98a, 0.85);
+    g.fillRoundedRect(6, 5, 34, 12, 4);
+    g.fillStyle(0x8a5610, 1);
+    for (const [x, y] of [[7, 7], [36, 7], [7, 36], [36, 36]] as [number, number][]) {
+      g.fillRect(x, y, 3, 3);
+    }
+    // เครื่องหมาย "?" ประกอบจากรูปทรงพื้นฐาน
+    g.fillStyle(0x6b3c06, 1);
+    g.fillRoundedRect(15, 12, 16, 7, 3.5); // หัวโค้งด้านบน
+    g.fillRoundedRect(25, 15, 7, 11, 3.5); // ขาขวา
+    g.fillRoundedRect(19, 22, 12, 6, 3); // ท่อนกลาง
+    g.fillRoundedRect(20, 25, 6, 8, 3); // ก้าน
+    g.fillCircle(23, 37, 3.4); // จุด
+  });
+
+  bake(scene, 'box_used', 46, 46, (g) => {
+    g.fillStyle(0x5a4a52, 1);
+    g.fillRoundedRect(0, 0, 46, 46, 6);
+    g.fillStyle(0x7d6a72, 1);
+    g.fillRoundedRect(3, 3, 40, 40, 5);
+    g.fillStyle(0x5a4a52, 1);
+    g.fillRect(3, 21, 40, 3);
+    g.fillRect(21, 3, 3, 18);
+    g.fillRect(13, 24, 3, 19);
+    g.fillRect(31, 24, 3, 19);
   });
 
   /* ---------------- ไอเทมเก็บสะสมคะแนน ---------------- */

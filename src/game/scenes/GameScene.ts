@@ -35,6 +35,7 @@ export class GameScene extends Phaser.Scene {
   private meteors!: Phaser.Physics.Arcade.Group;
   private gates!: Phaser.Physics.Arcade.Group;
   private gems!: Phaser.Physics.Arcade.Group;
+  private boxes!: Phaser.Physics.Arcade.Group;
   private decors!: Phaser.GameObjects.Group;
   private groundGroup!: Phaser.Physics.Arcade.StaticGroup;
 
@@ -56,6 +57,7 @@ export class GameScene extends Phaser.Scene {
   private clouds!: Phaser.GameObjects.TileSprite;
   private hills!: Phaser.GameObjects.TileSprite;
   private trees!: Phaser.GameObjects.TileSprite;
+  private bushes!: Phaser.GameObjects.TileSprite;
   private dangerVignette!: Phaser.GameObjects.Rectangle;
 
   /* ---------------- สถานะเกม ---------------- */
@@ -88,6 +90,7 @@ export class GameScene extends Phaser.Scene {
   private genX = 0;
   private nextGateX = 0;
   private nextObstacleX = 0;
+  private nextBoxX = 0;
   private nextMeteorAtMs = 0;
   private reserved: [number, number][] = [];
 
@@ -166,6 +169,7 @@ export class GameScene extends Phaser.Scene {
     this.genX = 0;
     this.nextGateX = this.startX + BALANCE.quiz.firstCheckpointM * PX_PER_METER;
     this.nextObstacleX = this.startX + 900;
+    this.nextBoxX = this.startX + 1400;
     this.nextMeteorAtMs = 0;
     this.generateAhead();
 
@@ -220,11 +224,19 @@ export class GameScene extends Phaser.Scene {
       .setAlpha(0.55);
 
     this.trees = this.add
-      .tileSprite(0, VIEW_H - 280, VIEW_W, 150, 'tree_far')
+      .tileSprite(0, VIEW_H - 310, VIEW_W, 190, 'tree_far')
       .setOrigin(0, 0)
       .setScrollFactor(0)
       .setDepth(-95)
-      .setAlpha(0.8);
+      .setAlpha(0.85);
+
+    // พุ่มไม้ชั้นหน้า วิ่งเร็วกว่าชั้นต้นไม้ → ตารับรู้ความลึกได้ชัดขึ้นมาก
+    this.bushes = this.add
+      .tileSprite(0, VIEW_H - 205, VIEW_W, 110, 'bush_near')
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(-94)
+      .setAlpha(0.9);
 
     // ขอบจอเรืองแสงตอนกำแพงใกล้ — "หายใจ" ช้าๆ ไม่ใช่กะพริบ
     // (กะพริบเกิน 3 ครั้ง/วินาที กระตุ้นอาการชักได้ — WCAG 2.3.1)
@@ -265,6 +277,15 @@ export class GameScene extends Phaser.Scene {
       immovable: true,
     });
 
+    // กล่องปริศนา — กระโดดชนจากข้างล่างแบบมาริโอ
+    // ใช้ collider (ไม่ใช่ overlap) เพื่อให้ยืนบนกล่องได้ด้วย
+    this.boxes = this.physics.add.group({
+      classType: Phaser.Physics.Arcade.Sprite,
+      maxSize: 16,
+      allowGravity: false,
+      immovable: true,
+    });
+
     this.decors = this.add.group({
       classType: Phaser.GameObjects.Sprite,
       maxSize: 64,
@@ -296,6 +317,7 @@ export class GameScene extends Phaser.Scene {
     );
     this.physics.add.overlap(this.player, this.gates, (_p, g) => this.onGateReached(g as ArcadeSprite));
     this.physics.add.overlap(this.player, this.gems, (_p, g) => this.onGemCollect(g as ArcadeSprite));
+    this.physics.add.collider(this.player, this.boxes, (_p, b) => this.onBoxTouch(b as ArcadeSprite));
 
 
     // ฝุ่นใต้เท้าตอนวิ่ง
@@ -366,7 +388,9 @@ export class GameScene extends Phaser.Scene {
         this.started = true;
         startMusic();
       }),
-      onBus('quiz:answered', ({ isCorrect, kind }) => this.onQuizAnswered(isCorrect, kind)),
+      onBus('quiz:answered', ({ isCorrect, kind, points }) =>
+        this.onQuizAnswered(isCorrect, kind, points),
+      ),
       onBus('game:quit', () => this.endGame('quit')),
     );
 
@@ -452,6 +476,22 @@ export class GameScene extends Phaser.Scene {
       this.nextObstacleX = ox + Math.max(spacing * this.rng.range(0.75, 1.35), minGap);
     }
 
+    // --- กล่องปริศนาลอยเหนือพื้น ---
+    // วางเป็นแถว 1-3 กล่องติดกันแบบมาริโอ กระโดดชนทีเดียวได้หลายกล่อง
+    while (this.nextBoxX < right) {
+      const bx = Math.max(this.nextBoxX, left);
+      if (bx >= right) break;
+
+      const count = this.rng.chance(0.35) ? this.rng.int(2, 3) : 1;
+      for (let i = 0; i < count; i++) {
+        const x = bx + i * 52;
+        if (x < right) this.spawnBox(x);
+      }
+
+      this.nextBoxX =
+        bx + count * 52 + BALANCE.level.boxEveryM * PX_PER_METER * this.rng.range(0.7, 1.4);
+    }
+
     // --- ดาวสะสมคะแนน (Star Gems) ---
     if (this.rng.chance(0.65)) {
       const gemX = left + this.rng.range(60, width - 120);
@@ -490,6 +530,100 @@ export class GameScene extends Phaser.Scene {
     const h = sprite.height * 0.72;
     body.setSize(w, h);
     body.setOffset((sprite.width - w) / 2, sprite.height - h);
+  }
+
+  /**
+   * กล่องปริศนาลอยอยู่ในระดับที่กระโดดชนได้พอดี
+   *
+   * ผู้เล่นกระโดดสูงสุด 156 px จากพื้น (ดู balance.player) กล่องจึงต้องอยู่ต่ำกว่านั้น
+   * ให้หัวชนก้นกล่องได้ระหว่างที่กำลังลอยขึ้น ไม่ใช่ต้องกระโดดสุดแรงถึงจะแตะถึง
+   */
+  private spawnBox(x: number): void {
+    const y = GROUND_Y - BALANCE.level.boxHeightPx;
+    const sprite = this.boxes.get(x, y, 'box') as ArcadeSprite | null;
+    if (!sprite) return;
+
+    sprite.setTexture('box');
+    sprite.enableBody(true, x, y, true, true);
+    sprite.setOrigin(0.5, 0.5).setDepth(6);
+    sprite.setData('used', false);
+    sprite.setData('baseY', y);
+
+    const body = sprite.body as Phaser.Physics.Arcade.Body;
+    body.setAllowGravity(false);
+    body.setImmovable(true);
+    body.setSize(sprite.width, sprite.height);
+    body.updateFromGameObject?.();
+
+    this.tweens.killTweensOf(sprite);
+    sprite.setAlpha(1);
+  }
+
+  /**
+   * ชนกล่อง — นับเฉพาะตอน "ชนจากข้างล่าง" เหมือนมาริโอ
+   * ถ้าเหยียบอยู่บนกล่องหรือชนด้านข้าง จะไม่เปิดกล่อง
+   */
+  private onBoxTouch(box: ArcadeSprite): void {
+    if (!box.active || box.getData('used') === true) return;
+
+    const body = this.pbody;
+    const hitFromBelow = body.blocked.up || body.touching.up;
+    if (!hitFromBelow) return;
+
+    box.setData('used', true);
+    box.setTexture('box_used');
+    sfx.checkpoint();
+
+    // กล่องเด้งขึ้นแล้วตกกลับ
+    const baseY = (box.getData('baseY') as number) ?? box.y;
+    this.tweens.killTweensOf(box);
+    this.tweens.add({
+      targets: box,
+      y: baseY - 14,
+      duration: 110,
+      yoyo: true,
+      ease: 'Quad.easeOut',
+      onUpdate: () => (box.body as Phaser.Physics.Arcade.Body).updateFromGameObject?.(),
+      onComplete: () => {
+        box.y = baseY;
+        (box.body as Phaser.Physics.Arcade.Body).updateFromGameObject?.();
+      },
+    });
+
+    this.popSparkles(box.x, baseY - 26);
+
+    // ของในกล่อง: หัวใจถ้ายังไม่เต็ม ไม่งั้นเป็นโบนัสระยะทาง
+    //
+    // ⚠️ เคยให้ "ดันกำแพงถอย" ตอนหัวใจเต็ม แต่ใช้ไม่ได้จริง:
+    //    ถ้าผู้เล่นนำอยู่ที่เพดาน maxGapPx อยู่แล้ว การผลักกำแพงจะโดน clamp กลับทันที
+    //    ผู้เล่นเลยไม่เห็นอะไรเกิดขึ้นเลย — รางวัลที่มองไม่เห็นเท่ากับไม่มีรางวัล
+    if (this.hearts < BALANCE.player.hearts) {
+      this.hearts += 1;
+      this.floatTextAt(box.x, baseY - 40, '+1 ❤️', 0xff8fa8);
+    } else {
+      this.distanceM += BALANCE.level.boxBonusMeters;
+      this.floatTextAt(
+        box.x,
+        baseY - 40,
+        `+${BALANCE.level.boxBonusMeters}m 🌟`,
+        0xffd700,
+      );
+    }
+  }
+
+  private popSparkles(x: number, y: number): void {
+    const emitter = this.add.particles(x, y, 'sparkle', {
+      speed: { min: 60, max: 200 },
+      angle: { min: 210, max: 330 },
+      scale: { start: 0.9, end: 0 },
+      alpha: { start: 1, end: 0 },
+      lifespan: 600,
+      quantity: 10,
+      emitting: false,
+    });
+    emitter.setDepth(14);
+    emitter.explode(12);
+    this.time.delayedCall(800, () => emitter.destroy());
   }
 
   private spawnGem(x: number, y: number): void {
@@ -714,7 +848,11 @@ export class GameScene extends Phaser.Scene {
     // ถ้าปล่อยให้มันอยู่กับที่ ผู้เล่นจะวิ่งหนีไปไกลจนมองไม่เห็นภัยคุกคามเลยใน 10 วิแรก
     // แล้วพอถึงเวลาไล่จริง กำแพงจะ "วาร์ป" เข้ามาเพราะโดน maxGapPx ดึงกลับ
     if (this.elapsedMs < BALANCE.wall.startDelayMs) {
-      this.wallX = this.player.x - BALANCE.wall.startGapPx;
+      // ⚠️ ต้องใช้ Math.max ไม่ใช่กำหนดค่าตรงๆ
+      //    ถ้ากำหนดตรงๆ กำแพงจะถูก "ล็อกติด" กับตัวผู้เล่น พอกดปุ่มถอย (◀)
+      //    กำแพงก็ถอยตามไปด้วย ซึ่งผิดธรรมชาติของเกม — ลาวาไม่มีทางไหลถอยหลัง
+      //    กำแพงต้องเดินหน้าอย่างเดียว (ratchet) ตามหลังเมื่อผู้เล่นวิ่งไปข้างหน้าเท่านั้น
+      this.wallX = Math.max(this.wallX, this.player.x - BALANCE.wall.startGapPx);
       this.syncWallVisuals();
       return;
     }
@@ -767,7 +905,8 @@ export class GameScene extends Phaser.Scene {
     const sx = this.cameras.main.scrollX;
     this.clouds.tilePositionX = sx * 0.06;
     this.hills.tilePositionX = sx * 0.16;
-    this.trees.tilePositionX = sx * 0.34;
+    this.trees.tilePositionX = sx * 0.3;
+    this.bushes.tilePositionX = sx * 0.52;
   }
 
   private updateMeteors(delta: number): void {
@@ -795,7 +934,7 @@ export class GameScene extends Phaser.Scene {
 
   private recycle(): void {
     const cutoff = this.cameras.main.scrollX - 300;
-    for (const group of [this.obstacles, this.meteors, this.gates]) {
+    for (const group of [this.obstacles, this.meteors, this.gates, this.boxes]) {
       group.children.each((child) => {
         const s = child as ArcadeSprite;
         if (s.active && s.x < cutoff) s.disableBody(true, true);
@@ -971,7 +1110,7 @@ export class GameScene extends Phaser.Scene {
     emitBus('quiz:open', { kind: this.pendingKind, stage: this.stage });
   }
 
-  private onQuizAnswered(isCorrect: boolean, kind: QuestionKind): void {
+  private onQuizAnswered(isCorrect: boolean, kind: QuestionKind, points = 0): void {
     if (!this.quizActive) return;
 
     if (kind === 'revive') {
@@ -985,7 +1124,8 @@ export class GameScene extends Phaser.Scene {
     if (isCorrect) {
       // รางวัลที่จับต้องได้: กำแพงถอยห่างจริง
       this.wallX -= BALANCE.wall.pushBackOnCorrect;
-      this.floatText('+', 0x9bd17b);
+      // โชว์คะแนนที่ได้จริงเป็นตัวเลข ไม่ใช่แค่เครื่องหมาย + เฉยๆ
+      this.floatText(points > 0 ? `+${points}` : '+', 0x9bd17b);
       this.cameras.main.flash(160, 155, 209, 123, false);
     } else {
       // ไม่เสียหัวใจ ไม่เสียคะแนน — แค่กำแพงเร่งขึ้นชั่วคราว
@@ -1021,20 +1161,28 @@ export class GameScene extends Phaser.Scene {
   }
 
   private floatText(symbol: string, color: number): void {
+    this.floatTextAt(this.player.x, this.player.y - 90, symbol, color);
+  }
+
+  /** ตัวหนังสือลอยขึ้นแล้วจางหาย ณ จุดที่กำหนด */
+  private floatTextAt(x: number, y: number, symbol: string, color: number, size = 38): void {
     const label = this.add
-      .text(this.player.x, this.player.y - 90, symbol, {
+      .text(x, y, symbol, {
         fontFamily: 'Kanit, sans-serif',
-        fontSize: '38px',
+        fontSize: `${size}px`,
         color: Phaser.Display.Color.IntegerToColor(color).rgba,
+        stroke: '#1d1129',
+        strokeThickness: 5,
       })
       .setOrigin(0.5)
       .setDepth(30);
 
     this.tweens.add({
       targets: label,
-      y: label.y - 60,
+      y: y - 60,
       alpha: 0,
-      duration: 850,
+      duration: 900,
+      ease: 'Quad.easeOut',
       onComplete: () => label.destroy(),
     });
   }

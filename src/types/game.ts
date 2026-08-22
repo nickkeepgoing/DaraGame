@@ -168,6 +168,8 @@ export interface QuizOpenPayload {
 export interface QuizAnsweredPayload {
   isCorrect: boolean;
   kind: QuestionKind;
+  /** คะแนนที่ได้จากข้อนี้ (0 ถ้าตอบผิด) — เกมเอาไปโชว์เป็นตัวเลขลอยขึ้น */
+  points: number;
 }
 
 export interface StageChangedPayload {

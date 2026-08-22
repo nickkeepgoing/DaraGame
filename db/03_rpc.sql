@@ -23,8 +23,11 @@ begin
     raise exception 'ต้องเข้าสู่ระบบก่อน (anonymous sign-in)' using errcode = '28000';
   end if;
 
+  -- ไม่ใส่รหัสห้อง = เข้า "ห้องรวม" อัตโนมัติ
+  -- (ครูไม่จำเป็นต้องเตรียมรหัสมาแจก นักเรียนกรอกแค่ชื่อเล่นก็เล่นได้)
   select * into v_class from classes
-   where join_code = upper(btrim(p_join_code)) and is_open;
+   where join_code = coalesce(nullif(upper(btrim(p_join_code)), ''), 'PUBLIC')
+     and is_open;
   if not found then
     raise exception 'ไม่พบรหัสห้องเรียนนี้ หรือห้องปิดรับแล้ว' using errcode = 'P0002';
   end if;
@@ -121,7 +124,10 @@ begin
      where pq.role = v_role
        and (v_role <> 'main' or pq.stage = p_stage)
        and pq.id not in (select question_id from run_answers where run_id = p_run_id)
-     order by pq.ord, random()
+     -- สุ่มล้วน ไม่เรียงตาม ord
+     -- ถ้าเรียงตาม ord ผู้เล่นจะเจอคำถามชุดเดิมเรียงลำดับเดิมทุกรอบที่เล่น
+     -- ทั้งที่คลังมีหลายสิบข้อ (ord ใช้แค่จัดลำดับตอนนำเข้าและดูในหน้าครู)
+     order by random()
      limit 1;
 
   if found then return; end if;

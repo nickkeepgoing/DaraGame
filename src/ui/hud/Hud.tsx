@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BALANCE, QUESTIONS_PER_STAGE, STAGE_COUNT } from '@/config/balance';
 import { onBus } from '@/game/EventBus';
 import { useGameStore } from '@/store/gameStore';
@@ -71,7 +71,7 @@ export function Hud({ onQuit }: Props) {
           <div className="flex items-center gap-4 rounded-2xl bg-night-900/70 px-4 py-1.5 backdrop-blur-sm">
             <Stat label="ระยะทาง" value={`${hud.distanceM} ม.`} />
             <div className="h-7 w-px bg-white/15" />
-            <Stat label="คะแนนคำถาม" value={quizScore} accent />
+            <ScoreStat score={quizScore} />
           </div>
 
           <div className="flex gap-2">
@@ -116,6 +116,51 @@ export function Hud({ onQuit }: Props) {
 
       <StageBanner />
     </>
+  );
+}
+
+/**
+ * คะแนนคำถามพร้อมเอฟเฟกต์ตอนได้คะแนนเพิ่ม
+ *
+ * ตัวเลขที่เปลี่ยนเงียบๆ ผู้เล่นมองไม่เห็น เพราะสายตาจดจ่ออยู่กับตัวละคร
+ * จึงต้องมีทั้ง (1) ตัวเลขเด้ง (2) ป้าย "+N" ลอยขึ้น เพื่อให้รู้ว่าได้คะแนนแล้วจริง
+ */
+function ScoreStat({ score }: { score: number }) {
+  const [gain, setGain] = useState(0);
+  const [bump, setBump] = useState(false);
+  const prevRef = useRef(score);
+
+  useEffect(() => {
+    const diff = score - prevRef.current;
+    prevRef.current = score;
+    if (diff <= 0) return;
+
+    setGain(diff);
+    setBump(true);
+    const t1 = window.setTimeout(() => setBump(false), 450);
+    const t2 = window.setTimeout(() => setGain(0), 1300);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, [score]);
+
+  return (
+    <div className="relative text-center">
+      <div className="text-[10px] leading-tight text-white/45">คะแนนคำถาม</div>
+      <div
+        className={`tabular text-lg leading-tight font-semibold text-leaf-400 transition-transform duration-200 ${
+          bump ? 'scale-150' : 'scale-100'
+        }`}
+      >
+        {score}
+      </div>
+      {gain > 0 && (
+        <div className="animate-score-pop tabular pointer-events-none absolute -top-1 left-1/2 -translate-x-1/2 text-sm font-bold text-leaf-400">
+          +{gain}
+        </div>
+      )}
+    </div>
   );
 }
 

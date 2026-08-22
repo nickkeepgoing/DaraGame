@@ -62,12 +62,12 @@ export function QuizModal() {
   kindRef.current = kind;
 
   /** ปิด popup แล้วปล่อยให้เกมเดินต่อ */
-  const close = useCallback((isCorrect: boolean) => {
+  const close = useCallback((isCorrect: boolean, points = 0) => {
     setPhase('idle');
     setQuestion(null);
     setResult(null);
     setChosenId(null);
-    emitBus('quiz:answered', { isCorrect, kind: kindRef.current });
+    emitBus('quiz:answered', { isCorrect, kind: kindRef.current, points });
   }, []);
 
   const submit = useCallback(
@@ -102,7 +102,7 @@ export function QuizModal() {
         // คำถามฟื้น/บอส เดิมพันสูง ให้เวลาอ่านเฉลยนานขึ้น
         const holdMs =
           kindRef.current === 'main' ? BALANCE.quiz.revealMs : BALANCE.quiz.revealMs + 1400;
-        window.setTimeout(() => close(res.isCorrect), holdMs);
+        window.setTimeout(() => close(res.isCorrect, res.points), holdMs);
       } catch {
         // เน็ตหลุดกลางคัน — อย่าให้ผู้เล่นค้างอยู่กับป๊อปอัป ปล่อยเกมเดินต่อไปเลย
         close(false);

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { api, isOffline } from '@/api';
+import { api } from '@/api';
 import { useGameStore } from '@/store/gameStore';
 import { unlock } from '@/audio/sfx';
 import { TeacherPasswordModal } from '@/ui/components/TeacherPasswordModal';
@@ -17,7 +17,9 @@ export function LoginScreen({ onDone }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
-  const canSubmit = nickname.trim().length >= 2 && (isOffline || joinCode.trim().length >= 4);
+  // รหัสห้องเป็นตัวเลือกเสมอ — ครูไม่จำเป็นต้องเตรียมรหัสมาแจก
+  // ถ้าเว้นว่าง ระบบจะให้เข้า "ห้องรวม" อัตโนมัติ (ดู join_class ใน db/03_rpc.sql)
+  const canSubmit = nickname.trim().length >= 2;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -63,19 +65,18 @@ export function LoginScreen({ onDone }: Props) {
 
           <label className="block">
             <span className="mb-1 block text-xs sm:text-sm font-medium text-dusk-100">
-              รหัสห้องเรียน
-              {isOffline && <span className="ml-1 text-white/40">(ไม่บังคับ)</span>}
+              รหัสห้องเรียน <span className="ml-1 text-white/40">(ไม่บังคับ)</span>
             </span>
             <input
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
               maxLength={20}
               autoComplete="off"
-              placeholder="เช่น M4-1-ASTRO"
+              placeholder="ไม่มีก็ปล่อยว่างไว้ได้"
               className="tabular w-full rounded-xl border border-white/15 bg-night-900/70 px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base tracking-wider text-white outline-none placeholder:text-white/30 placeholder:tracking-normal focus:border-dusk-300"
             />
             <span className="mt-1 block text-[11px] sm:text-xs text-white/40">
-              {isOffline ? 'ใส่ชื่อกลุ่มไว้ดูเล่นก็ได้' : 'ครูจะเขียนรหัสห้องไว้ให้บนกระดาน'}
+              เว้นว่างได้เลย — ใส่เฉพาะตอนที่ครูให้รหัสมาเพื่อแยกกระดานคะแนนเป็นรายห้อง
             </span>
           </label>
 

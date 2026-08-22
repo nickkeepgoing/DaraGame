@@ -115,9 +115,11 @@ export const localApi = {
     const source = fresh.length ? fresh : indexed.filter(matches);
     if (!source.length) return null;
 
-    // เรียงตาม ord เพื่อให้เจอคำถามในด่านตามลำดับที่ออกแบบไว้
-    const { q, i } = source.sort((a, b) => a.q.ord - b.q.ord)[0];
+    // สุ่มคำถามในหมวดที่ยังไม่เคยถามเพื่อให้ได้ชุดคำถามสดใหม่ไม่ซ้ำทุกรอบที่เล่น
+    const pickIndex = Math.floor(Math.random() * source.length);
+    const { q, i } = source[pickIndex];
     state?.asked.add(qid(i));
+
 
     return {
       id: qid(i),

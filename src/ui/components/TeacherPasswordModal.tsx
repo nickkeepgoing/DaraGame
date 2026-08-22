@@ -28,7 +28,7 @@ export function TeacherPasswordModal({ isOpen, onClose, onSuccess }: Props) {
       setPassword('');
       onSuccess();
     } else {
-      setError('รหัสผ่านไม่ถูกต้อง โปรดลองอีกครั้ง (รหัสเริ่มต้น: dara1234)');
+      setError('รหัสผ่านไม่ถูกต้อง โปรดลองอีกครั้ง');
     }
   }
 
@@ -57,10 +57,8 @@ export function TeacherPasswordModal({ isOpen, onClose, onSuccess }: Props) {
               placeholder="กรอกรหัสผ่านครู..."
               className="w-full rounded-xl border border-white/20 bg-night-950 px-4 py-2.5 text-white outline-none focus:border-amber-400"
             />
-            <span className="mt-1 block text-[11px] text-white/40">
-              รหัสผ่านเริ่มต้นสำหรับครูคือ: <code className="text-amber-300 font-mono">dara1234</code>
-            </span>
           </label>
+
 
           {error && (
             <p className="rounded-xl border border-lava-500/40 bg-lava-600/20 px-3 py-2 text-xs text-dusk-100">
