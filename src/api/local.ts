@@ -105,7 +105,14 @@ export const localApi = {
   },
 
   async nextQuestion(runId: string, req: QuestionRequest): Promise<PublicQuestion | null> {
-    const state = runs.get(runId);
+    // สร้าง state ให้เสมอถ้ายังไม่มี — ถ้าปล่อยเป็น undefined การจดว่า "ถามข้อนี้ไปแล้ว"
+    // จะเงียบหายไปทั้งหมด แล้วคำถามจะซ้ำได้ในรอบเดียวโดยไม่มีอะไรฟ้อง
+    let state = runs.get(runId);
+    if (!state) {
+      state = { seed: randomSeed(), startedAt: Date.now(), asked: new Set(), answers: [] };
+      runs.set(runId, state);
+    }
+
     const matches = ({ q }: { q: RawQuestion }) =>
       q.role === req.kind && (req.kind !== 'main' || q.stage === req.stage);
 
@@ -118,7 +125,7 @@ export const localApi = {
     // สุ่มคำถามในหมวดที่ยังไม่เคยถามเพื่อให้ได้ชุดคำถามสดใหม่ไม่ซ้ำทุกรอบที่เล่น
     const pickIndex = Math.floor(Math.random() * source.length);
     const { q, i } = source[pickIndex];
-    state?.asked.add(qid(i));
+    state.asked.add(qid(i));
 
 
     return {

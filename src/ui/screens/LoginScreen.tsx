@@ -12,13 +12,19 @@ export function LoginScreen({ onDone }: Props) {
   const setSession = useGameStore((s) => s.setSession);
   const setScreen = useGameStore((s) => s.setScreen);
   const [nickname, setNickname] = useState('');
-  const [joinCode, setJoinCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
-  // รหัสห้องเป็นตัวเลือกเสมอ — ครูไม่จำเป็นต้องเตรียมรหัสมาแจก
-  // ถ้าเว้นว่าง ระบบจะให้เข้า "ห้องรวม" อัตโนมัติ (ดู join_class ใน db/03_rpc.sql)
+  // ไม่มีช่องรหัสห้องบนจอ — นักเรียนกรอกแค่ชื่อเล่น แล้วเข้า "ห้องรวม" อัตโนมัติ
+  // (ดู join_class ใน db/03_rpc.sql: รหัสว่าง = ห้อง PUBLIC)
+  //
+  // ถ้าวันหนึ่งอยากแยกกระดานคะแนนรายห้อง ครูแจกเป็น "ลิงก์" แทนรหัส:
+  //   https://เกม.vercel.app/?room=M4-1-EARTH
+  // นักเรียนไม่ต้องพิมพ์อะไรเพิ่ม และหน้าจอไม่มีช่องให้งง
+  const roomFromUrl =
+    new URLSearchParams(window.location.search).get('room')?.toUpperCase() ?? '';
+
   const canSubmit = nickname.trim().length >= 2;
 
   async function handleSubmit(e: FormEvent) {
@@ -29,7 +35,7 @@ export function LoginScreen({ onDone }: Props) {
     setBusy(true);
     setError(null);
     try {
-      const session = await api.login(nickname.trim(), joinCode.trim().toUpperCase());
+      const session = await api.login(nickname.trim(), roomFromUrl);
       setSession(session);
       onDone();
     } catch (err) {
@@ -63,22 +69,12 @@ export function LoginScreen({ onDone }: Props) {
             />
           </label>
 
-          <label className="block">
-            <span className="mb-1 block text-xs sm:text-sm font-medium text-dusk-100">
-              รหัสห้องเรียน <span className="ml-1 text-white/40">(ไม่บังคับ)</span>
-            </span>
-            <input
-              value={joinCode}
-              onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-              maxLength={20}
-              autoComplete="off"
-              placeholder="ไม่มีก็ปล่อยว่างไว้ได้"
-              className="tabular w-full rounded-xl border border-white/15 bg-night-900/70 px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base tracking-wider text-white outline-none placeholder:text-white/30 placeholder:tracking-normal focus:border-dusk-300"
-            />
-            <span className="mt-1 block text-[11px] sm:text-xs text-white/40">
-              เว้นว่างได้เลย — ใส่เฉพาะตอนที่ครูให้รหัสมาเพื่อแยกกระดานคะแนนเป็นรายห้อง
-            </span>
-          </label>
+          {roomFromUrl && (
+            <p className="rounded-xl bg-white/5 px-3 py-2 text-center text-[11px] sm:text-xs text-dusk-200">
+              🏫 กำลังเข้าห้องเรียน <b className="tabular tracking-wider">{roomFromUrl}</b>{' '}
+              (จากลิงก์ที่ครูแจก)
+            </p>
+          )}
 
           {error && (
             <p className="rounded-xl border border-lava-500/40 bg-lava-600/15 px-3 py-2 text-xs sm:text-sm text-dusk-100">
