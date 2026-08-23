@@ -43,6 +43,7 @@ export function QuizModal() {
   const runId = useGameStore((s) => s.runId);
   const addQuizScore = useGameStore((s) => s.addQuizScore);
   const logAnswer = useGameStore((s) => s.logAnswer);
+  const setLastError = useGameStore((s) => s.setLastError);
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [kind, setKind] = useState<QuestionKind>('main');
@@ -127,11 +128,12 @@ export function QuizModal() {
         const message = err instanceof Error ? err.message : String(err);
         console.error('[quiz] ตรวจคำตอบไม่สำเร็จ:', err);
         setFailure(message);
+        setLastError(`ตรวจคำตอบไม่สำเร็จ: ${message}`);
         sfx.wrong();
         window.setTimeout(() => close(false), 3200);
       }
     },
-    [addQuizScore, logAnswer, close],
+    [addQuizScore, logAnswer, close, setLastError],
   );
 
   /* ---------- เปิดคำถามเมื่อถึง checkpoint หรือตอนตาย ---------- */
@@ -150,6 +152,7 @@ export function QuizModal() {
           .nextQuestion(runIdRef.current!, { kind: payload.kind, stage: payload.stage })
           .then((q) => {
             if (q) {
+              setLastError(null);
               setQuestion(q);
               setRemainingMs(q.timeLimitS * 1000);
               askedAtRef.current = Date.now();
@@ -157,16 +160,23 @@ export function QuizModal() {
             } else {
               // คลังคำถามหมวดนี้ว่าง — บอกให้รู้ ไม่ใช่ปิดเงียบๆ
               console.warn('[quiz] ไม่มีคำถามสำหรับ', payload);
+              setLastError(
+                `ไม่มีคำถามในคลังสำหรับ ${payload.kind}` +
+                  (payload.kind === 'main' ? ` ด่าน ${payload.stage}` : '') +
+                  ' — ยังไม่ได้นำเข้าคำถามใช่ไหม?',
+              );
               close(payload.kind === 'revive');
             }
           })
           .catch((err: unknown) => {
+            const message = err instanceof Error ? err.message : String(err);
             console.error('[quiz] ดึงคำถามไม่สำเร็จ:', err);
-            setFailure(err instanceof Error ? err.message : String(err));
+            setFailure(message);
+            setLastError(`ดึงคำถามไม่สำเร็จ: ${message}`);
             window.setTimeout(() => close(payload.kind === 'revive'), 3200);
           });
       }),
-    [close],
+    [close, setLastError],
   );
 
 

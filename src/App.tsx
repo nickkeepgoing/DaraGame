@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, isOffline } from '@/api';
+import { api } from '@/api';
 import { onBus, emitBus } from '@/game/EventBus';
 import { PhaserGame } from '@/game/PhaserGame';
 import { useGameStore } from '@/store/gameStore';
@@ -19,6 +19,7 @@ import { QuizModal } from '@/ui/quiz/QuizModal';
 import { TouchControls } from '@/ui/components/TouchControls';
 import { RotateNotice } from '@/ui/components/RotateNotice';
 import { DebugPanel } from '@/ui/DebugPanel';
+import { StatusChip } from '@/ui/components/StatusChip';
 
 const SHOWS_CANVAS = new Set(['countdown', 'playing', 'gameover']);
 
@@ -96,7 +97,12 @@ export default function App() {
             useGameStore.getState().session,
           )
           .then(setResult)
-          .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
+          .catch((e: unknown) => {
+            const message = e instanceof Error ? e.message : String(e);
+            console.error('[run] บันทึกคะแนนไม่สำเร็จ:', e);
+            setError(message);
+            useGameStore.getState().setLastError(`บันทึกคะแนนไม่สำเร็จ: ${message}`);
+          })
           .finally(() => setScreen('gameover'));
       }),
     [setResult, setScreen],
@@ -179,12 +185,7 @@ export default function App() {
 
       {(screen === 'playing' || screen === 'countdown') && <RotateNotice />}
       {import.meta.env.DEV && <DebugPanel />}
-
-      {isOffline && screen !== 'playing' && screen !== 'teacher' && (
-        <div className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-night-800/80 px-4 py-1 text-xs text-dusk-200">
-          โหมดออฟไลน์ — คะแนนเก็บในเครื่องนี้เท่านั้น (ยังไม่ได้ตั้งค่า Supabase)
-        </div>
-      )}
+      <StatusChip />
 
     </div>
   );

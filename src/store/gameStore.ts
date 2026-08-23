@@ -25,6 +25,14 @@ interface GameStore {
   result: FinishRunResult | null;
   muted: boolean;
 
+  /**
+   * ข้อผิดพลาดล่าสุดที่เกิดขึ้น (ตรวจคำตอบ / ดึงคำถาม / บันทึกคะแนน)
+   *
+   * มีไว้เพื่อให้ป้ายสถานะมุมจอแสดงให้เห็นได้ตลอด — เวลาผู้เล่นแจ้งว่า
+   * "กดแล้วไม่มีอะไรเกิดขึ้น" จะได้รู้ทันทีว่าพังตรงไหน ไม่ต้องเดา
+   */
+  lastError: string | null;
+
   setScreen: (screen: Screen) => void;
   setSession: (session: Session | null) => void;
   beginRun: (runId: string, seed: number) => void;
@@ -32,6 +40,7 @@ interface GameStore {
   addQuizScore: (points: number) => void;
   logAnswer: (entry: AnsweredLog) => void;
   setResult: (result: FinishRunResult | null) => void;
+  setLastError: (message: string | null) => void;
   toggleMute: () => void;
 }
 
@@ -56,6 +65,7 @@ export const useGameStore = create<GameStore>((set) => ({
   answerLog: [],
   result: null,
   muted: false,
+  lastError: null,
 
   setScreen: (screen) => set({ screen }),
   setSession: (session) => set({ session }),
@@ -67,5 +77,6 @@ export const useGameStore = create<GameStore>((set) => ({
   addQuizScore: (points) => set((s) => ({ quizScore: s.quizScore + points })),
   logAnswer: (entry) => set((s) => ({ answerLog: [...s.answerLog, entry] })),
   setResult: (result) => set({ result }),
+  setLastError: (lastError) => set({ lastError }),
   toggleMute: () => set((s) => ({ muted: !s.muted })),
 }));
