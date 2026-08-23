@@ -303,8 +303,10 @@ export class GameScene extends Phaser.Scene {
     this.player = this.physics.add.sprite(this.startX, GROUND_Y - 120, 'dino_run_0');
     this.player.setDepth(10);
     this.player.setOrigin(0.5, 1);
-    this.pbody.setSize(34, 44);
-    this.pbody.setOffset(22, 12);
+    // ซอโรพอดสูง 84 px — hitbox ครอบลำตัว+ขา+โคนคอ (สูง 66 px จากพื้น)
+    // ไม่ครอบหัวกับหางเพื่อให้อภัยผู้เล่น แต่ยังสูงพอให้เทอโรซอร์ที่บินระดับหัวชนได้
+    this.pbody.setSize(42, 66);
+    this.pbody.setOffset(25, 18);
     this.player.setMaxVelocity(BALANCE.player.maxSpeed * 1.4, BALANCE.player.maxFallSpeed);
     this.player.play('run');
 
@@ -469,11 +471,29 @@ export class GameScene extends Phaser.Scene {
     const spacing = this.stageConfig().spawnEveryM * PX_PER_METER;
     const minGap = BALANCE.level.minGapBetweenObstaclesM * PX_PER_METER;
 
+    const L = BALANCE.level;
+    const stageKey = `stage${Math.min(this.stage, STAGE_COUNT)}` as 'stage1' | 'stage2' | 'stage3';
+
     while (this.nextObstacleX < right) {
       const ox = Math.max(this.nextObstacleX, left);
       if (ox >= right) break;
-      if (!this.isReserved(ox)) this.spawnObstacle(ox);
-      this.nextObstacleX = ox + Math.max(spacing * this.rng.range(0.75, 1.35), minGap);
+
+      // ตัวขวางมาเป็นกลุ่มติดกัน — ต้องกระโดดข้ามทีเดียวทั้งกลุ่ม ไม่ใช่ทีละอัน
+      const cluster = this.rng.chance(L.clusterChance[stageKey]) ? this.rng.int(2, L.clusterMax) : 1;
+      let placed = 0;
+      let cx = ox;
+      for (let i = 0; i < cluster; i++) {
+        if (cx >= right) break;
+        if (!this.isReserved(cx)) {
+          this.spawnObstacle(cx, i === 0);
+          placed++;
+        }
+        cx += this.rng.range(L.clusterGapPx.min, L.clusterGapPx.max);
+      }
+
+      const groupWidth = Math.max(placed - 1, 0) * L.clusterGapPx.max;
+      this.nextObstacleX =
+        ox + groupWidth + Math.max(spacing * this.rng.range(0.75, 1.35), minGap);
     }
 
     // --- กล่องปริศนาลอยเหนือพื้น ---
@@ -514,8 +534,19 @@ export class GameScene extends Phaser.Scene {
     return this.reserved.some(([a, b]) => x >= a && x <= b);
   }
 
-  private spawnObstacle(x: number): void {
-    const key = this.rng.weighted({ rock: 0.5, fern: 0.28, egg: 0.22 });
+  /**
+   * @param allowTall อนุญาตให้เป็นหินแหลมสูงได้ไหม
+   *   ให้เฉพาะตัวแรกของกลุ่ม — ถ้าทั้งกลุ่มเป็นหินแหลมจะข้ามไม่พ้นเลย
+   */
+  private spawnObstacle(x: number, allowTall = true): void {
+    // หินแหลมโผล่ตั้งแต่ด่าน 2 เป็นต้นไป (ด่าน 1 ให้ผู้เล่นชินกับการกระโดดก่อน)
+    const tallOK = allowTall && this.stage >= 2;
+    const key = this.rng.weighted({
+      rock: tallOK ? 0.36 : 0.5,
+      fern: tallOK ? 0.22 : 0.28,
+      egg: tallOK ? 0.18 : 0.22,
+      spike_rock: tallOK ? 0.24 : 0,
+    });
     const sprite = this.obstacles.get(x, GROUND_Y, key) as ArcadeSprite | null;
     if (!sprite) return;
 
@@ -702,6 +733,51 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * เทอโรซอร์บินสวนมาระดับหัว
+   *
+   * บังคับให้ผู้เล่นได้ใช้ปุ่มหมอบ ซึ่งเดิมแทบไม่ได้ใช้เลย
+   * เพราะตัวขวางทุกอันก่อนหน้านี้แก้ด้วยการกระโดดได้หมด
+   *
+   * ตัวเลขความสูงคิดจาก hitbox จริง (ดู BALANCE.level.pteroHeightPx):
+   *   ยืน  สูง 66 px จากพื้น → ทับกับตัวเทอโรซอร์ (43-65) = โดน
+   *   หมอบ สูง 26 px จากพื้น → ลอดใต้ไปได้
+   *
+   * หมายเหตุ: กระโดดข้ามก็รอดได้เหมือนกันถ้าจังหวะดี แต่เสี่ยงกว่ามาก
+   * เพราะลงมาแล้วคุมไม่ได้ว่าจะเจอหินอะไรรออยู่
+   */
+  private spawnPtero(): void {
+    const L = BALANCE.level;
+    const x = this.player.x + this.rng.range(900, 1500);
+    const y = GROUND_Y - L.pteroHeightPx;
+    const sprite = this.obstacles.get(x, y, 'ptero') as ArcadeSprite | null;
+    if (!sprite) return;
+
+    sprite.setTexture('ptero');
+    sprite.enableBody(true, x, y, true, true);
+    sprite.setOrigin(0.5, 0.5).setDepth(7);
+
+    const body = sprite.body as Phaser.Physics.Arcade.Body;
+    body.setAllowGravity(false);
+    // บินสวนทางมา = เข้าหาผู้เล่นเร็วกว่าตัวขวางที่อยู่นิ่ง ต้องตัดสินใจไว
+    body.setVelocityX(-this.rng.range(L.pteroSpeedPx.min, L.pteroSpeedPx.max));
+
+    // hitbox เอาแค่ลำตัว ไม่รวมปลายปีก — ไม่งั้นโดนทั้งที่ดูเหมือนหลบพ้น
+    body.setSize(34, 22);
+    body.setOffset((sprite.width - 34) / 2, (sprite.height - 22) / 2);
+
+    // ขยับปีกขึ้นลงให้ดูมีชีวิต
+    this.tweens.killTweensOf(sprite);
+    this.tweens.add({
+      targets: sprite,
+      y: y - 8,
+      duration: 420,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+  }
+
   private spawnMeteor(): void {
     const x = this.player.x + this.rng.range(620, 1250);
     const y = this.cameras.main.scrollY - 80;
@@ -784,12 +860,13 @@ export class GameScene extends Phaser.Scene {
       if (wantDuck) {
         this.player.stop();
         this.player.setTexture('dino_duck');
-        body.setSize(44, 24);
-        body.setOffset(20, 12);
+        // หมอบแล้วสูงแค่ 26 px จากพื้น — ลอดใต้เทอโรซอร์ได้พอดี
+        body.setSize(50, 26);
+        body.setOffset(26, 26);
       } else {
         this.player.play('run', true);
-        body.setSize(34, 44);
-        body.setOffset(22, 12);
+        body.setSize(42, 66);
+        body.setOffset(25, 18);
       }
     }
 
@@ -810,16 +887,35 @@ export class GameScene extends Phaser.Scene {
       sfx.jump();
     }
 
-    // ปล่อยปุ่มเร็ว = กระโดดเตี้ย (variable jump height)
-    //
-    // ⚠️ ต้องหน่วง 80ms ก่อนเริ่มตัดแรง ไม่งั้นจะชนกับ jump buffer:
-    //    ผู้เล่นกดกระโดดตอนยังลอยอยู่ แล้วปล่อยนิ้วก่อนแตะพื้น พอแตะพื้นเกม
-    //    จะกระโดดให้ตาม buffer — แต่ ณ วินาทีนั้นนิ้วปล่อยไปแล้ว แรงจึงโดนตัดทันที
-    //    ผลคือกระโดดได้แค่ 17 px แทนที่จะเป็น 156 px แล้วผู้เล่นจะงงว่าทำไมกระโดดไม่ขึ้น
+    /* ---- ฟิสิกส์กระโดด: แรงโน้มถ่วงไม่เท่ากันแต่ละช่วง ----
+       ของเดิมใช้วิธี "ปล่อยนิ้วแล้วตัดความเร็วทิ้งครึ่งหนึ่ง" ซึ่งบังคับให้ต้อง
+       กดค้างตลอดถึงจะกระโดดได้ไกล แตะสั้นๆ จะกระโดดกระตุกเตี้ยมาก
+       ของใหม่: แตะ = ได้เต็มใบพื้นฐาน / กดค้าง = มีแรงยกเสริมให้สูงขึ้นอีก */
     const jumpAgeMs = time - this.jumpStartedAtMs;
-    if (!jumpKey && jumpAgeMs > 80 && body.velocity.y < -220) {
-      body.setVelocityY(body.velocity.y * p.jumpCutMultiplier);
+    const vy = body.velocity.y;
+
+    // กดค้างในช่วงแรกหลังออกตัว = มีแรงยกเสริม (ไม่ใช่แค่ "ไม่โดนตัด")
+    const boosting = jumpKey && vy < 0 && jumpAgeMs <= p.jumpHoldMs;
+
+    // เลือกตัวคูณแรงโน้มถ่วงตามช่วงของการกระโดด
+    let gravityScale: number;
+    if (boosting) {
+      gravityScale = p.jumpHoldGravityScale;
+    } else if (vy < 0) {
+      gravityScale = Math.abs(vy) < p.apexThresholdVy ? p.apexGravityScale : 1;
+    } else {
+      // ขาลง — กดปุ่มลงค้างไว้ = ทิ้งตัวเร็ว (ใช้ลงจากกล่องหรือหลบอุกกาบาต)
+      gravityScale =
+        Math.abs(vy) < p.apexThresholdVy
+          ? p.apexGravityScale
+          : duckKey
+            ? p.fallGravityScale * p.fastFallScale
+            : p.fallGravityScale;
     }
+
+    // Arcade รวม gravity ของ world กับของ body เข้าด้วยกัน
+    // อยากได้ผลลัพธ์ = world × scale จึงต้องตั้ง body = world × (scale - 1)
+    body.setGravityY(p.gravity * (gravityScale - 1));
 
     /* ---- ท่าทาง ---- */
     if (!this.ducking) {
@@ -914,7 +1010,13 @@ export class GameScene extends Phaser.Scene {
 
     this.nextMeteorAtMs -= delta;
     if (this.nextMeteorAtMs <= 0) {
-      this.spawnMeteor();
+      const L = BALANCE.level;
+      const stageKey = `stage${Math.min(this.stage, STAGE_COUNT)}` as 'stage1' | 'stage2' | 'stage3';
+      if (this.distanceM >= L.pteroStartM && this.rng.chance(L.pteroChance[stageKey])) {
+        this.spawnPtero();
+      } else {
+        this.spawnMeteor();
+      }
       const { min, max } = BALANCE.level.meteorEveryMs;
       // ยิ่งไกล ยิ่งถี่
       const rush = Phaser.Math.Clamp(this.distanceM / 400, 0, 0.45);

@@ -63,161 +63,206 @@ function bake(
 }
 
 /** ขนาดผืนผ้าใบของตัวละคร */
-export const TREX_W = 74;
-export const TREX_H = 58;
-
-/** ฟันบนขากรรไกร */
-function teeth(g: Phaser.GameObjects.Graphics, xs: number[], y: number, size = 4): void {
-  g.fillStyle(C.tooth, 1);
-  for (const x of xs) g.fillTriangle(x, y - 1, x + size, y - 1, x + size / 2, y + size);
-}
+export const SAURO_W = 92;
+export const SAURO_H = 84;
+export const SAURO_DUCK_W = 100;
+export const SAURO_DUCK_H = 52;
 
 /**
- * ไทรันโนซอรัส เร็กซ์ สไตล์ Chibi Kawaii น่ารักน่าเอ็นดู
- *   - ตาโตประกายวิ้ง 2 จุด
- *   - แก้มชมพูระเรื่อ
- *   - หนามสีส้มคอรัลทรงมน
- *   - ลำตัวอวบอ้วนกลมมนน่ารัก
+ * ไดโนเสาร์คอยาวกินพืช (ซอโรพอด แนวบราคิโอซอรัส) สไตล์ชิบิน่ารัก
+ *
+ * จุดที่ทำให้ "อ่านออกว่าเป็นไดโนคอยาว" แม้ตัวเล็กบนจอมือถือ:
+ *   1. คอยาวโค้งขึ้นเกินครึ่งความสูงตัว หัวเล็กจิ๋วอยู่ปลายคอ
+ *   2. ลำตัวทรงถังใหญ่ ไม่มีเอว
+ *   3. ขา 4 ข้างทรงเสาตรงๆ ไม่ใช่ขาพับแบบสัตว์กินเนื้อ
+ *   4. หางยาวลากพื้นถ่วงน้ำหนักคอ
+ *   5. ไม่มีฟันแหลม ปากมนๆ แทน — สื่อว่ากินพืช
+ *
+ * @param legs [ขาคู่หน้า, ขาคู่หลัง] ค่ายิ่งมากยิ่งยกขาสูง
+ * @param neckLift ยกคอขึ้นกี่ px (ตอนกระโดดจะเงยคอขึ้น)
  */
-function trexBase(
+function sauropodBase(
   g: Phaser.GameObjects.Graphics,
   legs: [number, number],
-  mouthOpen = 3,
+  neckLift = 0,
 ): void {
   const [frontLeg, backLeg] = legs;
 
-  /* ---- หาง: กลมมน น่ารัก ---- */
+  /* ---- หาง: ยาวเรียว ลากไปด้านหลัง ---- */
   g.fillStyle(C.bodyDark, 1);
-  g.fillTriangle(0, 31, 26, 20, 26, 38);
-  g.fillEllipse(22, 29, 20, 18);
+  g.fillTriangle(0, 54, 30, 44, 30, 60);
+  g.fillEllipse(26, 52, 22, 20);
+  // ลายวงบนหาง
+  g.fillStyle(C.crest, 0.6);
+  g.fillEllipse(12, 51, 7, 4);
+  g.fillEllipse(21, 50, 8, 5);
 
-  /* ---- หนามบนหาง ---- */
-  g.fillStyle(C.crest, 1);
-  g.fillTriangle(6, 21, 12, 16, 15, 23);
-  g.fillTriangle(16, 18, 21, 12, 24, 20);
-
-  /* ---- ขาหลัง (อยู่ด้านหลัง) ---- */
+  /* ---- ขาคู่หลัง (อยู่ไกลกว่า จึงเข้มกว่า) ---- */
   g.fillStyle(C.bodyDarker, 1);
-  g.fillEllipse(26, 36 - backLeg * 0.4, 20, 24); // ต้นขาอวบ
-  g.fillRoundedRect(22, 43 - backLeg, 9, 13 + backLeg * 0.5, 4);
-  g.fillRoundedRect(18, 51 - backLeg, 16, 6, 3); // เท้า
-  g.fillStyle(C.tooth, 1);
-  g.fillCircle(32, 53 - backLeg, 2.5); // เล็บเท้าจิ๋ว
+  g.fillRoundedRect(30, 58 - backLeg, 13, 26 + backLeg, 6);
+  g.fillRoundedRect(52, 58 - frontLeg, 13, 26 + frontLeg, 6);
 
-  /* ---- ลำตัวอวบกลม ---- */
+  /* ---- ลำตัวทรงถัง ---- */
   g.fillStyle(C.body, 1);
-  g.fillEllipse(36, 30, 42, 30);
+  g.fillEllipse(46, 50, 54, 38);
 
   /* ---- ท้องสีครีม ---- */
   g.fillStyle(C.belly, 1);
-  g.fillEllipse(38, 36, 28, 16);
+  g.fillEllipse(48, 59, 40, 20);
 
-  /* ---- หนามบนหลัง 3 อัน ---- */
+  /* ---- ลายจุดบนหลัง ---- */
+  g.fillStyle(C.crest, 0.65);
+  g.fillEllipse(34, 38, 10, 6);
+  g.fillEllipse(46, 35, 11, 6);
+  g.fillEllipse(58, 38, 9, 6);
+
+  /* ---- ขาคู่หน้า (อยู่ใกล้กว่า จึงสว่างกว่า) ---- */
+  g.fillStyle(C.body, 1);
+  g.fillRoundedRect(36, 60 + backLeg * 0.5, 14, 24 - backLeg * 0.5, 6);
+  g.fillRoundedRect(58, 60 + frontLeg * 0.5, 14, 24 - frontLeg * 0.5, 6);
+  // กีบเท้า
+  g.fillStyle(C.bodyDark, 1);
+  g.fillRoundedRect(35, 79, 16, 5, 2.5);
+  g.fillRoundedRect(57, 79, 16, 5, 2.5);
+
+  /* ---- คอยาวโค้ง: วาดด้วยวงกลมไล่ขนาดจากโคนไปปลาย ---- */
+  const neck: [number, number, number][] = [
+    [62, 40, 11],
+    [67, 33, 10],
+    [71, 26, 9],
+    [74, 19, 8.2],
+    [77, 13, 7.6],
+  ];
+  g.fillStyle(C.body, 1);
+  for (const [nx, ny, nr] of neck) g.fillCircle(nx, ny - neckLift, nr);
+
+  /* ---- หัวเล็กปลายคอ ---- */
+  const hx = 79;
+  const hy = 8 - neckLift;
+  g.fillStyle(C.body, 1);
+  g.fillRoundedRect(hx - 9, hy - 6, 20, 14, 6); // กะโหลก
+  g.fillRoundedRect(hx + 2, hy - 2, 12, 9, 4); // ปากมนๆ ไม่มีฟัน
+
+  /* ---- หงอนเล็กบนหัว (บราคิโอซอรัสมีสันจมูกนูน) ---- */
   g.fillStyle(C.crest, 1);
-  g.fillTriangle(26, 17, 31, 10, 35, 19);
-  g.fillTriangle(34, 15, 39, 8, 43, 17);
-  g.fillTriangle(42, 14, 47, 8, 50, 16);
+  g.fillEllipse(hx - 1, hy - 7, 12, 6);
 
-  /* ---- คอและหัว ---- */
-  g.fillStyle(C.body, 1);
-  g.fillRoundedRect(44, 10, 16, 22, 8); // คอ
-  g.fillRoundedRect(45, 4, 26, 20, 9); // กะโหลกกลมโต
-  g.fillRoundedRect(57, 10, 16, 11, 4); // ปากบน
-
-  // ฟันน่ารัก 2 ซี่
-  teeth(g, [61, 67], 20, 3.5);
-
-  // ปากด้านใน + ลิ้นสีชมพู
-  g.fillStyle(0x8c3b52, 1);
-  g.fillRoundedRect(56, 20, 16, mouthOpen + 1, 2);
-  g.fillStyle(0xff7096, 1);
-  g.fillCircle(62, 21 + mouthOpen * 0.5, 2.5);
-
-  // ขากรรไกรล่าง
-  g.fillStyle(C.bodyDark, 1);
-  g.fillRoundedRect(55, 20 + mouthOpen, 16, 7, 3.5);
-
-  /* ---- แก้มชมพูพาสเทลน่ารัก (Kawaii Blush) ---- */
-  g.fillStyle(C.blush, 0.85);
-  g.fillCircle(54, 20, 4.5);
-
-  /* ---- ดวงตาอนิเมะกลมโต (Kawaii Eyes) ---- */
+  /* ---- ตากลมโตน่ารัก ---- */
   g.fillStyle(C.eye, 1);
-  g.fillCircle(58, 11, 5.5); // ตาขาวใหญ่
+  g.fillCircle(hx + 2, hy, 4.4);
   g.fillStyle(C.pupil, 1);
-  g.fillCircle(59.5, 11, 3.5); // ตาดำใหญ่
-  // ประกายวิ้งตา 2 จุด
+  g.fillCircle(hx + 3.2, hy, 2.8);
   g.fillStyle(C.sparkle, 1);
-  g.fillCircle(58.2, 9.5, 1.6);
-  g.fillCircle(61, 12.2, 0.9);
+  g.fillCircle(hx + 2, hy - 1.4, 1.3);
+  g.fillCircle(hx + 4.4, hy + 1.2, 0.7);
 
-  /* ---- รูจมูกจิ๋ว ---- */
+  /* ---- แก้มชมพู ---- */
+  g.fillStyle(C.blush, 0.8);
+  g.fillCircle(hx - 4, hy + 3, 3);
+
+  /* ---- รูจมูก ---- */
   g.fillStyle(C.bodyDarker, 0.7);
-  g.fillCircle(70, 13, 1.2);
-
-  /* ---- แขนจิ๋วน่ารัก (Front Tiny Arm) ---- */
-  g.fillStyle(C.bodyDark, 1);
-  g.fillRoundedRect(45, 28, 10, 6, 3);
-  g.fillStyle(C.tooth, 1);
-  g.fillCircle(54, 30, 2); // กรงเล็บจิ๋ว
-
-  /* ---- ขาหน้า (สว่างกว่า) ---- */
-  g.fillStyle(C.body, 1);
-  g.fillEllipse(40, 37 - frontLeg * 0.4, 21, 25);
-  g.fillRoundedRect(37, 44 - frontLeg, 10, 12 + frontLeg * 0.5, 4);
-  g.fillStyle(C.bodyDark, 1);
-  g.fillRoundedRect(33, 51 - frontLeg, 17, 6, 3.5);
-  g.fillStyle(C.tooth, 1);
-  g.fillCircle(49, 53 - frontLeg, 2.5); // เล็บเท้า
+  g.fillCircle(hx + 12, hy + 1, 1.2);
 }
 
 export function createTextures(scene: Phaser.Scene): void {
 
-  /* ---------------- ไทรันโนซอรัส เร็กซ์ ---------------- */
-  bake(scene, 'dino_run_0', TREX_W, TREX_H, (g) => trexBase(g, [1, 7], 3));
-  bake(scene, 'dino_run_1', TREX_W, TREX_H, (g) => trexBase(g, [7, 1], 2));
+  /* ---------------- ซอโรพอด (ไดโนคอยาวกินพืช) ---------------- */
+  bake(scene, 'dino_run_0', SAURO_W, SAURO_H, (g) => sauropodBase(g, [0, 6], 0));
+  bake(scene, 'dino_run_1', SAURO_W, SAURO_H, (g) => sauropodBase(g, [6, 0], 1));
 
-  // ตอนลอยกลางอากาศ: พับขาทั้งสองข้างขึ้น อ้าปากกว้าง
-  bake(scene, 'dino_jump', TREX_W, TREX_H, (g) => trexBase(g, [9, 9], 6));
+  // ลอยกลางอากาศ: ยกขาทั้งสี่ เงยคอขึ้น
+  bake(scene, 'dino_jump', SAURO_W, SAURO_H, (g) => sauropodBase(g, [7, 7], 4));
 
-  // หมอบ: ก้มลำตัวลงต่ำ หางยกขึ้นถ่วง
-  bake(scene, 'dino_duck', TREX_W + 6, 38, (g) => {
+  // หมอบ: ก้มคอลงเล็มหญ้า — ท่าธรรมชาติของสัตว์กินพืชคอยาวพอดี
+  bake(scene, 'dino_duck', SAURO_DUCK_W, SAURO_DUCK_H, (g) => {
+    // หาง
     g.fillStyle(C.bodyDark, 1);
-    g.fillTriangle(0, 14, 26, 12, 24, 26);
-    g.fillEllipse(26, 20, 18, 16);
+    g.fillTriangle(0, 26, 28, 18, 28, 32);
+    g.fillEllipse(26, 25, 20, 18);
 
+    // ขา (สั้นลงเพราะหมอบ)
     g.fillStyle(C.bodyDarker, 1);
-    g.fillEllipse(28, 26, 20, 16);
-    g.fillRoundedRect(21, 31, 16, 6, 3);
+    g.fillRoundedRect(32, 34, 12, 18, 5);
+    g.fillRoundedRect(54, 34, 12, 18, 5);
 
+    // ลำตัว
     g.fillStyle(C.body, 1);
-    g.fillEllipse(38, 21, 44, 20);
+    g.fillEllipse(48, 30, 52, 32);
     g.fillStyle(C.belly, 1);
-    g.fillEllipse(40, 26, 30, 10);
-
-    g.fillStyle(C.crest, 0.85);
-    g.fillEllipse(32, 14, 9, 4);
-    g.fillEllipse(43, 13, 9, 4);
+    g.fillEllipse(50, 38, 38, 16);
+    g.fillStyle(C.crest, 0.65);
+    g.fillEllipse(38, 20, 10, 5);
+    g.fillEllipse(50, 18, 10, 5);
 
     g.fillStyle(C.body, 1);
-    g.fillRoundedRect(52, 6, 24, 14, 6);
-    g.fillRoundedRect(63, 11, 15, 8, 3);
-    teeth(g, [65, 70, 74], 19, 3.5);
-    g.fillStyle(C.bodyDark, 1);
-    g.fillRoundedRect(61, 20, 16, 6, 3);
+    g.fillRoundedRect(38, 46, 14, 6, 3);
+    g.fillRoundedRect(58, 46, 14, 6, 3);
 
-    g.fillStyle(C.bodyDarker, 1);
-    g.fillTriangle(57, 8, 68, 6, 68, 10);
-    g.fillStyle(C.eye, 1);
-    g.fillCircle(63, 12, 3.6);
-    g.fillStyle(C.pupil, 1);
-    g.fillCircle(64.3, 12, 1.9);
+    // คอทอดไปข้างหน้าเกือบขนานพื้น
+    const neck: [number, number, number][] = [
+      [66, 28, 10],
+      [73, 29, 9],
+      [80, 31, 8],
+      [86, 34, 7.2],
+    ];
+    g.fillStyle(C.body, 1);
+    for (const [nx, ny, nr] of neck) g.fillCircle(nx, ny, nr);
 
+    // หัวก้มลงเล็มหญ้า
+    g.fillStyle(C.body, 1);
+    g.fillRoundedRect(83, 32, 17, 13, 6);
+    g.fillRoundedRect(92, 38, 8, 8, 3);
     g.fillStyle(C.crest, 1);
-    g.fillRoundedRect(36, 31, 18, 6, 3);
+    g.fillEllipse(88, 31, 11, 5);
+    g.fillStyle(C.eye, 1);
+    g.fillCircle(91, 37, 3.8);
+    g.fillStyle(C.pupil, 1);
+    g.fillCircle(92, 37.6, 2.4);
+    g.fillStyle(C.sparkle, 1);
+    g.fillCircle(90.6, 36, 1.1);
   });
 
   /* ---------------- สิ่งกีดขวาง ---------------- */
+  // หินแหลมสูง — ต้องกดกระโดดค้างถึงจะข้ามพ้น แตะสั้นๆ ไม่พอ
+  bake(scene, 'spike_rock', 44, 74, (g) => {
+    g.fillStyle(C.rockDark, 1);
+    g.fillTriangle(4, 74, 22, 2, 40, 74);
+    g.fillStyle(C.rock, 1);
+    g.fillTriangle(9, 74, 22, 10, 32, 74);
+    g.fillStyle(0xffffff, 0.18);
+    g.fillTriangle(13, 70, 22, 16, 24, 70);
+    // รอยแตกบอกว่ามันคม
+    g.fillStyle(C.rockDark, 0.8);
+    g.fillTriangle(24, 46, 30, 34, 29, 50);
+  });
+
+  // เทอโรซอร์บินสวนระดับหัว — หมอบอย่างเดียวถึงรอด กระโดดยิ่งโดนเต็มๆ
+  bake(scene, 'ptero', 76, 40, (g) => {
+    // ปีกกางกว้าง
+    g.fillStyle(0x9a6fb0, 1);
+    g.fillTriangle(6, 6, 40, 20, 8, 30);
+    g.fillTriangle(70, 6, 38, 20, 68, 30);
+    g.fillStyle(0xb98bcf, 1);
+    g.fillTriangle(14, 11, 38, 20, 15, 26);
+    g.fillTriangle(62, 11, 40, 20, 61, 26);
+    // ลำตัว
+    g.fillStyle(0x7d5591, 1);
+    g.fillEllipse(38, 20, 22, 15);
+    // หัว + จะงอยยาว
+    g.fillStyle(0x7d5591, 1);
+    g.fillCircle(48, 16, 8);
+    g.fillTriangle(54, 13, 74, 17, 54, 20);
+    // หงอนท้ายทอย
+    g.fillStyle(C.crest, 1);
+    g.fillTriangle(44, 10, 34, 3, 48, 9);
+    // ตา
+    g.fillStyle(C.eye, 1);
+    g.fillCircle(50, 14, 3);
+    g.fillStyle(C.pupil, 1);
+    g.fillCircle(51, 14, 1.7);
+  });
+
   bake(scene, 'rock', 46, 36, (g) => {
     g.fillStyle(C.rockDark, 1);
     g.fillEllipse(23, 26, 44, 18);
