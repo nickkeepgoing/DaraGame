@@ -381,12 +381,20 @@ export function TeacherDashboardScreen({ onBack }: Props) {
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
                       <span className="shrink-0 text-sm text-white/60">เลือกห้องเรียน:</span>
+                      {/*
+                        ⚠️ min-w-0 จำเป็นตรงนี้: flex item ที่เป็น <select> จะไม่ยอมหด
+                        แคบกว่าความกว้างของ option ที่ยาวที่สุดข้างในเลย (ค่าเริ่มต้นของ
+                        flexbox คือ min-width: auto ไม่ใช่ 0) ต่อให้ใส่ flex-1 ก็ไม่ช่วย
+                        ผลคือกล่องยืดล้นขอบการ์ดออกไปเวลามีชื่อห้องยาวๆ อยู่ใน option
+                        ต้องบังคับ min-w-0 ให้มันยอมหดตามพื้นที่จริงที่มี แล้วให้ตัวอักษร
+                        ข้างในตัดด้วย text-overflow: ellipsis แทนที่จะดันกล่องให้กว้างขึ้น
+                      */}
                       <select
                         value={selectedClassId}
                         onChange={(e) => setSelectedClassId(e.target.value)}
-                        className="flex-1 rounded-xl border border-white/20 bg-night-900 px-4 py-2 text-sm text-white outline-none focus:border-amber-400 sm:flex-none"
+                        className="min-w-0 flex-1 truncate rounded-xl border border-white/20 bg-night-900 px-4 py-2 text-sm text-white outline-none focus:border-amber-400 sm:flex-none"
                       >
                         <option value="all">ทุกห้องเรียน ({students.length} คน)</option>
                         {classes.map((c) => (
