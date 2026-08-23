@@ -52,14 +52,28 @@ export function QuizModal() {
   const [chosenId, setChosenId] = useState<string | null>(null);
   const [remainingMs, setRemainingMs] = useState(0);
 
+  const [failure, setFailure] = useState<string | null>(null);
+
   const askedAtRef = useRef(0);
   const questionRef = useRef<PublicQuestion | null>(null);
   const phaseRef = useRef<Phase>('idle');
   const kindRef = useRef<QuestionKind>('main');
+  const runIdRef = useRef<string | null>(null);
 
   phaseRef.current = phase;
   questionRef.current = question;
   kindRef.current = kind;
+
+  /**
+   * id ของรอบที่ใช้จริง
+   *
+   * ⚠️ ต้องเป็นค่าเดียวกันทั้งตอน "ขอคำถาม" และตอน "ส่งคำตอบ"
+   *    เดิมสองที่ไม่ตรงกัน: ตอนขอคำถามยอมใช้ 'fallback-run' ถ้า runId ว่าง
+   *    แต่ตอนส่งคำตอบดัน `if (!runId) return;` — ผลคือคำถามขึ้นมาให้ตอบได้
+   *    แต่กดแล้วเงียบสนิท ไม่มีคะแนน ไม่มีเฉลย และไม่มีอะไรฟ้องเลยสักอย่าง
+   */
+  const activeRunId = runId || 'fallback-run';
+  runIdRef.current = activeRunId;
 
   /** ปิด popup แล้วปล่อยให้เกมเดินต่อ */
   const close = useCallback((isCorrect: boolean, points = 0) => {
@@ -67,13 +81,14 @@ export function QuizModal() {
     setQuestion(null);
     setResult(null);
     setChosenId(null);
+    setFailure(null);
     emitBus('quiz:answered', { isCorrect, kind: kindRef.current, points });
   }, []);
 
   const submit = useCallback(
     async (choiceId: string | null) => {
       const q = questionRef.current;
-      if (!q || !runId || phaseRef.current !== 'asking') return;
+      if (!q || phaseRef.current !== 'asking') return;
 
       setChosenId(choiceId);
       setPhase('revealing');
@@ -82,7 +97,7 @@ export function QuizModal() {
       try {
         // ⚠️ เซิร์ฟเวอร์เป็นคนบอกว่าถูกหรือผิด ไม่ใช่ฝั่งนี้
         //    เฉลยไม่เคยถูกส่งมาก่อนตอบ (view public_questions ไม่มีคอลัมน์ is_correct)
-        const res = await api.answerQuestion(runId, q.id, choiceId, timeMs);
+        const res = await api.answerQuestion(runIdRef.current!, q.id, choiceId, timeMs);
         setResult(res);
         if (res.isCorrect) {
           addQuizScore(res.points);
@@ -103,28 +118,36 @@ export function QuizModal() {
         const holdMs =
           kindRef.current === 'main' ? BALANCE.quiz.revealMs : BALANCE.quiz.revealMs + 1400;
         window.setTimeout(() => close(res.isCorrect, res.points), holdMs);
-      } catch {
-        // เน็ตหลุดกลางคัน — อย่าให้ผู้เล่นค้างอยู่กับป๊อปอัป ปล่อยเกมเดินต่อไปเลย
-        close(false);
+      } catch (err) {
+        // ตรวจคำตอบไม่สำเร็จ (เน็ตหลุด / RPC บนเซิร์ฟเวอร์ไม่ตรงกับที่โค้ดเรียก)
+        //
+        // ⚠️ เดิมตรงนี้เรียก close(false) เงียบๆ — ป๊อปอัปหายวับ ไม่มีคะแนน ไม่มีเฉลย
+        //    ผู้เล่นเห็นแค่ "กดแล้วไม่มีอะไรเกิดขึ้น" และเราก็ไม่รู้ว่าพังเพราะอะไร
+        //    ความล้มเหลวที่เงียบคือความล้มเหลวที่แก้ไม่ได้ จึงต้องโชว์ให้เห็น
+        const message = err instanceof Error ? err.message : String(err);
+        console.error('[quiz] ตรวจคำตอบไม่สำเร็จ:', err);
+        setFailure(message);
+        sfx.wrong();
+        window.setTimeout(() => close(false), 3200);
       }
     },
-    [runId, addQuizScore, logAnswer, close],
+    [addQuizScore, logAnswer, close],
   );
 
   /* ---------- เปิดคำถามเมื่อถึง checkpoint หรือตอนตาย ---------- */
   useEffect(
     () =>
       onBus('quiz:open', (payload) => {
-        const activeRunId = runId || 'fallback-run';
         setKind(payload.kind);
         kindRef.current = payload.kind;
         setStage(payload.stage);
         setPhase('loading');
         setResult(null);
         setChosenId(null);
+        setFailure(null);
 
         void api
-          .nextQuestion(activeRunId, { kind: payload.kind, stage: payload.stage })
+          .nextQuestion(runIdRef.current!, { kind: payload.kind, stage: payload.stage })
           .then((q) => {
             if (q) {
               setQuestion(q);
@@ -132,12 +155,18 @@ export function QuizModal() {
               askedAtRef.current = Date.now();
               setPhase('asking');
             } else {
+              // คลังคำถามหมวดนี้ว่าง — บอกให้รู้ ไม่ใช่ปิดเงียบๆ
+              console.warn('[quiz] ไม่มีคำถามสำหรับ', payload);
               close(payload.kind === 'revive');
             }
           })
-          .catch(() => close(payload.kind === 'revive'));
+          .catch((err: unknown) => {
+            console.error('[quiz] ดึงคำถามไม่สำเร็จ:', err);
+            setFailure(err instanceof Error ? err.message : String(err));
+            window.setTimeout(() => close(payload.kind === 'revive'), 3200);
+          });
       }),
-    [runId, close],
+    [close],
   );
 
 
@@ -180,9 +209,25 @@ export function QuizModal() {
       <div
         className={`animate-pop-in panel quiz-panel w-full max-w-3xl rounded-3xl p-5 sm:p-7 ${style.ring}`}
       >
-        {phase === 'loading' && <p className="py-10 text-center text-dusk-200">กำลังเปิดคำถาม…</p>}
+        {phase === 'loading' && !failure && (
+          <p className="py-10 text-center text-dusk-200">กำลังเปิดคำถาม…</p>
+        )}
 
-        {question && phase !== 'loading' && (
+        {/* ความล้มเหลวต้องมองเห็นได้ ไม่ใช่ปิดป๊อปอัปหนีเงียบๆ
+            ไม่งั้นผู้เล่นเห็นแค่ "กดแล้วไม่มีอะไรเกิดขึ้น" แล้วเราก็ไล่บั๊กไม่ถูก */}
+        {failure && (
+          <div className="rounded-2xl border border-lava-500/50 bg-lava-600/15 p-4 text-center">
+            <p className="font-display mb-1 font-semibold text-lava-400">
+              ⚠️ ตรวจคำตอบไม่สำเร็จ
+            </p>
+            <p className="mb-2 text-sm text-white/75">
+              ต่อกับเซิร์ฟเวอร์ไม่ได้ ข้อนี้เลยยังไม่ได้คะแนน — เกมจะไปต่อให้เอง
+            </p>
+            <p className="tabular text-[11px] break-words text-white/40">{failure}</p>
+          </div>
+        )}
+
+        {question && phase !== 'loading' && !failure && (
           <>
             <QuizHeader
               question={question}
