@@ -235,6 +235,13 @@ export function TeacherDashboardScreen({ onBack }: Props) {
             <span>วิเคราะห์ข้อสอบ</span>
           </button>
 
+          {/* สเปเซอร์ท้ายแถบเลื่อน — padding-right ของ container ที่ overflow-x-auto
+              ไม่ถูกนำมาคิดเป็นระยะเลื่อนได้จริงในหลายเบราว์เซอร์ (เป็นพฤติกรรม CSS ที่รู้กันอยู่แล้ว)
+              ผลคือปุ่มสุดท้ายชนขอบจอพอดีเป๊ะเวลาเลื่อนสุด ดูเหมือนถูกตัดครึ่งไปเลย
+              เพิ่ม div ว่างเป็นตัวจริงแทน padding ถึงจะได้ระยะห่างที่เลื่อนไปเจอได้จริง
+              ซ่อนบนจอกว้างเพราะแถบข้างกลายเป็นแนวตั้งไม่ต้องเลื่อนแล้ว ไม่งั้นจะไปแทรกช่องว่างแปลกๆ */}
+          <div className="w-3 shrink-0 sm:hidden" aria-hidden="true" />
+
           {/* กล่องคำแนะนำ: ซ่อนบนมือถือ ไม่ใช่ข้อมูลจำเป็น และแถบแนวนอนไม่มีที่พอให้วาง */}
           <div className="hidden pt-6 sm:block">
             <div className="space-y-2 rounded-2xl border border-white/10 bg-night-900/80 p-4 text-xs text-white/50">
