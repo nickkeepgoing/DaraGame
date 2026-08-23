@@ -190,56 +190,67 @@ export function TeacherDashboardScreen({ onBack }: Props) {
       )}
 
       {/* ---------- Main Content Area ---------- */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Navigation Sidebar / Tabs */}
-        <aside className="w-64 border-r border-white/10 bg-night-900/40 p-4 space-y-2">
+      {/*
+        แนวนอน (row) บนจอกว้าง แต่ต้องเป็นแนวตั้ง (col) บนมือถือ
+        เดิม <aside> เป็น w-64 (256px) ตายตัวไม่มี breakpoint เลย บนจอแคบ
+        (เช่นมือถือแนวตั้งที่ครูหยิบมาดูเร็วๆ) มันกินพื้นที่เกือบครึ่งจอ
+        บีบเนื้อหาหลักเหลือแค่ ~100px จนตัวหนังสือตัดคำมั่วไปหมด
+      */}
+      <div className="flex flex-1 flex-col overflow-hidden sm:flex-row">
+        {/* Navigation: แถบแท็บแนวนอน เลื่อนได้ บนมือถือ / แถบข้างแนวตั้งบนจอกว้าง */}
+        <aside className="flex shrink-0 gap-2 overflow-x-auto border-b border-white/10 bg-night-900/40 p-2.5 sm:w-64 sm:flex-col sm:space-y-2 sm:space-x-0 sm:overflow-visible sm:border-r sm:border-b-0 sm:p-4">
           <button
             onClick={() => setTab('classes')}
-            className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left font-medium transition-all ${
+            className={`flex shrink-0 items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium whitespace-nowrap transition-all sm:w-full sm:gap-3 sm:px-4 sm:py-3 sm:text-base ${
               tab === 'classes'
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-lg'
+                ? 'border border-amber-500/40 bg-amber-500/20 text-amber-300 shadow-lg'
                 : 'text-white/70 hover:bg-white/5 hover:text-white'
             }`}
           >
-            <span className="text-xl">🏫</span>
+            <span className="text-lg sm:text-xl">🏫</span>
             <span>จัดการห้องเรียน</span>
           </button>
 
           <button
             onClick={() => setTab('students')}
-            className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left font-medium transition-all ${
+            className={`flex shrink-0 items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium whitespace-nowrap transition-all sm:w-full sm:gap-3 sm:px-4 sm:py-3 sm:text-base ${
               tab === 'students'
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-lg'
+                ? 'border border-amber-500/40 bg-amber-500/20 text-amber-300 shadow-lg'
                 : 'text-white/70 hover:bg-white/5 hover:text-white'
             }`}
           >
-            <span className="text-xl">📊</span>
+            <span className="text-lg sm:text-xl">📊</span>
             <span>สถิตินักเรียน ({students.length})</span>
           </button>
 
           <button
             onClick={() => setTab('analytics')}
-            className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left font-medium transition-all ${
+            className={`flex shrink-0 items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium whitespace-nowrap transition-all sm:w-full sm:gap-3 sm:px-4 sm:py-3 sm:text-base ${
               tab === 'analytics'
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-lg'
+                ? 'border border-amber-500/40 bg-amber-500/20 text-amber-300 shadow-lg'
                 : 'text-white/70 hover:bg-white/5 hover:text-white'
             }`}
           >
-            <span className="text-xl">🧠</span>
+            <span className="text-lg sm:text-xl">🧠</span>
             <span>วิเคราะห์ข้อสอบ</span>
           </button>
 
-          <div className="pt-6">
-            <div className="rounded-2xl border border-white/10 bg-night-900/80 p-4 text-xs text-white/50 space-y-2">
+          {/* กล่องคำแนะนำ: ซ่อนบนมือถือ ไม่ใช่ข้อมูลจำเป็น และแถบแนวนอนไม่มีที่พอให้วาง */}
+          <div className="hidden pt-6 sm:block">
+            <div className="space-y-2 rounded-2xl border border-white/10 bg-night-900/80 p-4 text-xs text-white/50">
               <p className="font-semibold text-white/80">💡 คำแนะนำสำหรับครู:</p>
-              <p>• ครูเขียน <b>รหัสห้องเรียน (Join Code)</b> ขึ้นกระดานให้เด็กกรอกเข้าเล่น</p>
-              <p>• หากต้องการแข่งระดับห้อง ให้ใส่ <b>Seed เดียวกัน</b> เด็กจะเจอด่านเหมือนกันเป๊ะ</p>
+              <p>
+                • ครูเขียน <b>รหัสห้องเรียน (Join Code)</b> ขึ้นกระดานให้เด็กกรอกเข้าเล่น
+              </p>
+              <p>
+                • หากต้องการแข่งระดับห้อง ให้ใส่ <b>Seed เดียวกัน</b> เด็กจะเจอด่านเหมือนกันเป๊ะ
+              </p>
             </div>
           </div>
         </aside>
 
         {/* Tab Body */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           {loading ? (
             <div className="flex h-64 items-center justify-center text-white/50">
               กำลังโหลดข้อมูล...
@@ -249,9 +260,11 @@ export function TeacherDashboardScreen({ onBack }: Props) {
               {/* TAB 1: CLASSES */}
               {tab === 'classes' && (
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between">
+                  {/* เดิม heading+ปุ่มอยู่แถวเดียวกันตายตัว บนจอแคบปุ่มเลยถูกบีบจนตัวอักษรตัดคำ 3 บรรทัด
+                      ให้ซ้อนกันแนวตั้งบนมือถือ (ปุ่มเต็มความกว้าง กดง่ายกว่าเดิมด้วย) แล้วกลับเป็นแถวเดียวบนจอกว้าง */}
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h2 className="text-2xl font-bold text-white">ห้องเรียนทั้งหมด</h2>
+                      <h2 className="text-xl font-bold text-white sm:text-2xl">ห้องเรียนทั้งหมด</h2>
                       <p className="text-sm text-white/60">
                         สร้างและควบคุมการเปิด/ปิดรับนักเรียน รวมถึงตั้งค่า Seed ประจำวัน
                       </p>
@@ -261,7 +274,7 @@ export function TeacherDashboardScreen({ onBack }: Props) {
                         handleGenerateCode();
                         setShowCreateModal(true);
                       }}
-                      className="btn-primary rounded-xl px-5 py-2.5 font-bold shadow-lg"
+                      className="btn-primary shrink-0 rounded-xl px-5 py-2.5 font-bold whitespace-nowrap shadow-lg"
                     >
                       + สร้างห้องเรียนใหม่
                     </button>
@@ -349,7 +362,11 @@ export function TeacherDashboardScreen({ onBack }: Props) {
               {/* TAB 2: STUDENTS */}
               {tab === 'students' && (
                 <div className="space-y-6">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
+                  {/* เดิมเป็น flex-wrap + justify-between แถวเดียว: พอหัวเรื่องยาวจนขึ้นบรรทัดใหม่
+                      กลุ่ม dropdown จะกลายเป็นรายการเดียวบนแถวที่เหลือ แล้ว justify-between ก็ดันมันไปชิดซ้าย
+                      เหลือที่ว่างมหาศาลด้านขวา (จุดที่วงไว้ในภาพ) ให้ซ้อนกันแนวตั้งบนมือถือแทน
+                      แล้วให้ select ยืดเต็มแถวด้วย flex-1 */}
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h2 className="text-2xl font-bold text-white">สถิติและคะแนนนักเรียน</h2>
                       <p className="text-sm text-white/60">
@@ -358,11 +375,11 @@ export function TeacherDashboardScreen({ onBack }: Props) {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-white/60">เลือกห้องเรียน:</span>
+                      <span className="shrink-0 text-sm text-white/60">เลือกห้องเรียน:</span>
                       <select
                         value={selectedClassId}
                         onChange={(e) => setSelectedClassId(e.target.value)}
-                        className="rounded-xl border border-white/20 bg-night-900 px-4 py-2 text-sm text-white outline-none focus:border-amber-400"
+                        className="flex-1 rounded-xl border border-white/20 bg-night-900 px-4 py-2 text-sm text-white outline-none focus:border-amber-400 sm:flex-none"
                       >
                         <option value="all">ทุกห้องเรียน ({students.length} คน)</option>
                         {classes.map((c) => (
@@ -378,13 +395,13 @@ export function TeacherDashboardScreen({ onBack }: Props) {
                     <table className="w-full text-left text-sm text-white">
                       <thead className="border-b border-white/10 bg-night-800/80 text-xs uppercase tracking-wider text-amber-300">
                         <tr>
-                          <th className="px-6 py-4">#</th>
-                          <th className="px-6 py-4">ชื่อเล่นนักเรียน</th>
-                          <th className="px-6 py-4 text-center">เล่นไปแล้ว (รอบ)</th>
-                          <th className="px-6 py-4 text-center">คะแนนสูงสุด</th>
-                          <th className="px-6 py-4 text-center">ตอบถูก (%)</th>
-                          <th className="px-6 py-4 text-center">ระยะทางไกลสุด (ม.)</th>
-                          <th className="px-6 py-4 text-right">เล่นล่าสุด</th>
+                          <th className="px-6 py-4 whitespace-nowrap">#</th>
+                          <th className="px-6 py-4 whitespace-nowrap">ชื่อเล่นนักเรียน</th>
+                          <th className="px-6 py-4 text-center whitespace-nowrap">เล่นไปแล้ว (รอบ)</th>
+                          <th className="px-6 py-4 text-center whitespace-nowrap">คะแนนสูงสุด</th>
+                          <th className="px-6 py-4 text-center whitespace-nowrap">ตอบถูก (%)</th>
+                          <th className="px-6 py-4 text-center whitespace-nowrap">ระยะทางไกลสุด (ม.)</th>
+                          <th className="px-6 py-4 text-right whitespace-nowrap">เล่นล่าสุด</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5">
@@ -398,8 +415,9 @@ export function TeacherDashboardScreen({ onBack }: Props) {
                           filteredStudents.map((st, idx) => (
                             <tr key={st.playerId} className="hover:bg-white/5 transition-colors">
                               <td className="px-6 py-4 font-mono text-white/40">{idx + 1}</td>
-                              <td className="px-6 py-4 font-bold text-dusk-100 flex items-center gap-2">
+                              <td className="px-6 py-4 font-bold text-dusk-100 whitespace-nowrap"><span className="flex items-center gap-2">
                                 <span>🦖</span> {st.nickname}
+                                </span>
                               </td>
                               <td className="px-6 py-4 text-center font-mono text-white/80">
                                 {st.runsPlayed}
@@ -454,12 +472,12 @@ export function TeacherDashboardScreen({ onBack }: Props) {
                     <table className="w-full text-left text-sm text-white">
                       <thead className="border-b border-white/10 bg-night-800/80 text-xs uppercase tracking-wider text-amber-300">
                         <tr>
-                          <th className="px-6 py-4">โจทย์คำถาม</th>
-                          <th className="px-6 py-4">หมวดวิชา</th>
-                          <th className="px-6 py-4 text-center">ระดับความยาก</th>
-                          <th className="px-6 py-4 text-center">ตอบทั้งหมด (ครั้ง)</th>
-                          <th className="px-6 py-4 text-center">ตอบถูก (%)</th>
-                          <th className="px-6 py-4 text-right">เวลาตอบเฉลี่ย</th>
+                          <th className="px-6 py-4 whitespace-nowrap">โจทย์คำถาม</th>
+                          <th className="px-6 py-4 whitespace-nowrap">หมวดวิชา</th>
+                          <th className="px-6 py-4 text-center whitespace-nowrap">ระดับความยาก</th>
+                          <th className="px-6 py-4 text-center whitespace-nowrap">ตอบทั้งหมด (ครั้ง)</th>
+                          <th className="px-6 py-4 text-center whitespace-nowrap">ตอบถูก (%)</th>
+                          <th className="px-6 py-4 text-right whitespace-nowrap">เวลาตอบเฉลี่ย</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5">
