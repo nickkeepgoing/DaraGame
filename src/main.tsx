@@ -1,6 +1,10 @@
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { watchViewportHeight } from './lib/viewport';
 import './index.css';
+
+// ต้องตั้งค่าก่อน React render เฟรมแรก ไม่งั้นจะเห็นเลย์เอาต์กระโดดตอนโหลด
+watchViewportHeight();
 
 /**
  * ⚠️ ตั้งใจไม่ใช้ <React.StrictMode>

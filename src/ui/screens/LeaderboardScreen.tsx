@@ -35,7 +35,7 @@ export function LeaderboardScreen({ onBack }: Props) {
       <div className="animate-pop-in panel my-auto w-full max-w-2xl rounded-3xl p-6 sm:p-8">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-display text-2xl font-bold text-dusk-100">🏆 กระดานคะแนน</h2>
-          <button onClick={onBack} className="btn-ghost rounded-xl px-4 py-2 text-sm">
+          <button onClick={onBack} className="btn-ghost flex h-11 items-center rounded-xl px-4 text-sm">
             ← กลับ
           </button>
         </div>

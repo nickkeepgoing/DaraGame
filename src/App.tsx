@@ -184,8 +184,9 @@ export default function App() {
       {screen === 'teacher' && <TeacherDashboardScreen onBack={quitToMenu} />}
 
       {(screen === 'playing' || screen === 'countdown') && <RotateNotice />}
-      {import.meta.env.DEV && <DebugPanel />}
-      <StatusChip />
+      {/* เครื่องมือของนักพัฒนา ซ่อนตอนกำลังเล่น — ผู้เล่นไม่ควรเห็นและมันบังจอ */}
+      {import.meta.env.DEV && screen !== 'playing' && <DebugPanel />}
+      {screen !== 'playing' && <StatusChip />}
 
     </div>
   );

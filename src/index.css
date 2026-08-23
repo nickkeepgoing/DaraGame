@@ -36,10 +36,15 @@
 html,
 body,
 #root {
+  /* ไล่จากตัวสำรองหยาบสุดไปแม่นสุด — ตัวหลังทับตัวหน้าถ้าเบราว์เซอร์รองรับ
+       100%    : ตัวสำรองสุดท้าย
+       100dvh  : ความสูงที่เห็นจริง (เบราว์เซอร์ใหม่)
+       --app-h : วัดจาก visualViewport ด้วย JS — แม่นที่สุด ดู src/lib/viewport.ts
+     ⚠️ ต้องมี --app-h เพราะเจอกับตาแล้วว่า 100dvh ให้ค่า 720px ทั้งที่จอสูง 360px
+        ทำให้ปุ่มที่วางด้วย bottom-* หลุดไปอยู่ใต้จอ กดไม่ได้เลย */
   height: 100%;
-  /* iOS Safari: 100% = ความสูงรวมแถบเบราว์เซอร์ที่ยุบ/ขยายได้ ทำให้จอกระตุกตอนเลื่อน
-     100dvh คือความสูงที่ "เห็นจริงตอนนี้" — เบราว์เซอร์ที่ไม่รองรับจะใช้ 100% ข้างบนแทน */
   height: 100dvh;
+  height: var(--app-h, 100dvh);
   margin: 0;
   overscroll-behavior: none;
 }
@@ -164,8 +169,10 @@ button {
     margin-bottom: 0.45rem !important;
   }
   .quiz-choice {
-    min-height: 38px !important;
-    padding-block: 0.3rem !important;
+    /* ห้ามต่ำกว่า 44 px แม้จอจะเตี้ย — ปุ่มที่กดพลาดตอนจับเวลาอยู่คือ UX ที่แย่ที่สุด
+       ถ้าที่ไม่พอจริง ให้ตัดที่อื่น (คำอธิบาย/หัวเรื่อง) ก่อนเสมอ */
+    min-height: 44px !important;
+    padding-block: 0.35rem !important;
     font-size: 0.85rem !important;
     line-height: 1.35 !important;
   }

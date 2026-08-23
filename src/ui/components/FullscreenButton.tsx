@@ -28,7 +28,7 @@ export function FullscreenButton() {
   return (
     <button
       onClick={() => void toggleFullscreen()}
-      className="btn-ghost shrink-0 rounded-xl px-3 py-2 text-sm"
+      className="btn-ghost flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-base"
       aria-label={full ? 'ออกจากโหมดเต็มจอ' : 'เล่นเต็มจอ'}
     >
       {full ? '🗗' : '⛶'}

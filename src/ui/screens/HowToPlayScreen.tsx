@@ -1,8 +1,8 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { BALANCE, QUESTIONS_PER_STAGE, STAGE_COUNT } from '@/config/balance';
 import { useGameStore } from '@/store/gameStore';
+import { isTouchDevice } from '@/lib/mobile';
 import { FullscreenButton, IosHomeScreenHint } from '@/ui/components/FullscreenButton';
-import { TeacherPasswordModal } from '@/ui/components/TeacherPasswordModal';
 
 interface Props {
   busy: boolean;
@@ -12,35 +12,54 @@ interface Props {
   onLeaderboard: () => void;
 }
 
-const CONTROLS = [
-  { keys: '← →  /  A D', label: 'วิ่ง — กดขวาค้างไว้เพื่อเร่ง กดซ้ายเพื่อถอย' },
-  { keys: '↑  /  W  /  Space', label: 'กระโดดข้ามสิ่งกีดขวางและหลุมลาวา' },
-  { keys: '↓  /  S', label: 'หมอบหลบของที่บินต่ำ' },
-];
-
+/**
+ * หน้าก่อนเริ่มเล่น
+ *
+ * เดิมหน้านี้ยาวจนล้นจอมือถือแนวนอน (สูง ~360 px) ต้องเลื่อนถึงจะเจอปุ่มเริ่ม
+ * และโชว์ปุ่มคีย์บอร์ดให้คนเล่นมือถือดูด้วย ซึ่งไม่มีประโยชน์
+ *
+ * เขียนใหม่โดยยึด 2 ข้อ:
+ *   1. ต้องจบในจอเดียว ไม่ต้องเลื่อน — เด็กไม่อ่านอะไรที่ต้องเลื่อนอยู่แล้ว
+ *   2. แสดงเฉพาะวิธีบังคับของ "อุปกรณ์ที่กำลังใช้อยู่" ไม่ใช่ทั้งสองแบบ
+ */
 export function HowToPlayScreen({ busy, error, nickname, onStart, onLeaderboard }: Props) {
   const muted = useGameStore((s) => s.muted);
   const toggleMute = useGameStore((s) => s.toggleMute);
   const setScreen = useGameStore((s) => s.setScreen);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [touch, setTouch] = useState(false);
+
+  useEffect(() => setTouch(isTouchDevice()), []);
+
+  const controls = touch
+    ? [
+        { key: '▲', label: 'กระโดด', hint: 'กดค้างยิ่งนานยิ่งสูง' },
+        { key: '▼', label: 'หมอบ', hint: 'ลอดใต้ตัวที่บินมา' },
+        { key: '▶', label: 'เร่ง', hint: 'กดค้างไว้เพื่อหนีลาวา' },
+      ]
+    : [
+        { key: 'Space', label: 'กระโดด', hint: 'กดค้างยิ่งนานยิ่งสูง' },
+        { key: '↓', label: 'หมอบ', hint: 'ลอดใต้ตัวที่บินมา' },
+        { key: '→', label: 'เร่ง', hint: 'กดค้างไว้เพื่อหนีลาวา' },
+      ];
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center overflow-y-auto p-3 sm:p-4">
-      <div className="animate-pop-in panel w-full max-w-2xl rounded-3xl p-4 sm:p-7 max-h-[94vh] overflow-y-auto">
-        <div className="mb-3 sm:mb-5 flex items-start justify-between gap-4">
-          <div>
-            <h2 className="font-display text-xl sm:text-2xl font-bold text-dusk-100">
+    <div className="absolute inset-0 flex items-center justify-center overflow-y-auto p-3">
+      <div className="animate-pop-in panel w-full max-w-2xl rounded-3xl p-4 sm:p-6">
+        {/* หัวเรื่อง + ปุ่มระบบ */}
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="font-display truncate text-lg font-bold text-dusk-100 sm:text-2xl">
               พร้อมแล้วนะ {nickname} 🦕
             </h2>
-            <p className="text-xs sm:text-sm text-dusk-200/75">
-              กำแพงลาวาจากอุกกาบาตกำลังไล่มาจากทางซ้าย — วิ่งไปให้ไกลที่สุด
+            <p className="truncate text-[11px] text-dusk-200/70 sm:text-sm">
+              วิ่งหนีลาวา ตอบคำถามให้ครบ {STAGE_COUNT} ด่าน แล้วไปเจอบอสสุดท้าย
             </p>
           </div>
-          <div className="flex shrink-0 gap-2">
+          <div className="flex shrink-0 gap-1.5">
             <FullscreenButton />
             <button
               onClick={toggleMute}
-              className="btn-ghost rounded-xl px-3 py-2 text-sm"
+              className="btn-ghost flex h-11 w-11 items-center justify-center rounded-xl text-base"
               aria-label={muted ? 'เปิดเสียง' : 'ปิดเสียง'}
             >
               {muted ? '🔇' : '🔊'}
@@ -48,96 +67,72 @@ export function HowToPlayScreen({ busy, error, nickname, onStart, onLeaderboard 
           </div>
         </div>
 
-        <div className="mb-3 sm:mb-5 space-y-2">
-          {CONTROLS.map((c) => (
-            <div
-              key={c.keys}
-              className="flex flex-wrap items-center gap-2 sm:gap-3 rounded-xl bg-white/5 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm"
-            >
-              <kbd className="tabular shrink-0 rounded-lg bg-night-900 px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-xs sm:text-sm text-dusk-200">
-                {c.keys}
-              </kbd>
-              <span className="text-white/85">{c.label}</span>
+        {/* วิธีบังคับ — แสดงเฉพาะของอุปกรณ์ที่ใช้อยู่ */}
+        <div className="mb-3 grid grid-cols-3 gap-2">
+          {controls.map((c) => (
+            <div key={c.label} className="rounded-2xl bg-white/5 px-2 py-2 text-center">
+              <div className="font-display mb-0.5 text-base leading-none font-bold text-dusk-100 sm:text-xl">
+                {c.key}
+              </div>
+              <div className="text-xs font-semibold text-white/90">{c.label}</div>
+              <div className="mt-0.5 text-[10px] leading-tight text-white/45">{c.hint}</div>
             </div>
           ))}
-          <p className="px-1 text-[11px] sm:text-xs text-white/40">
-            เล่นบนมือถือ: มีปุ่ม <b className="text-white/70">◀ ▶</b> อยู่มุมซ้ายล่าง และปุ่ม{' '}
-            <b className="text-white/70">▲ กระโดด</b> / <b className="text-white/70">▼ หมอบ</b>{' '}
-            อยู่มุมขวาล่าง กดพร้อมกันได้
+        </div>
+
+        {/* กติกาสำคัญ — เหลือเฉพาะที่เปลี่ยนวิธีเล่นจริงๆ */}
+        <div className="mb-3 space-y-1.5 rounded-2xl bg-white/5 p-3 text-[11px] leading-relaxed text-white/75 sm:text-xs">
+          <p>
+            <b className="text-dusk-100">❤️ {BALANCE.player.hearts} หัวใจ</b> — ชนของเสีย 1 ดวง
+            หมดแล้วยัง <b className="text-dusk-100">ฟื้นได้ {BALANCE.player.maxRevives} ครั้ง</b>{' '}
+            ถ้าตอบคำถามฟื้นถูก
+          </p>
+          <p>
+            <b className="text-leaf-400">⭐ ตอบถูกได้คะแนน + ดันลาวาถอยห่าง</b> · ตอบผิดไม่เสียหัวใจ
+            แค่ลาวาเร่งขึ้นครู่หนึ่ง แล้วเราจะเฉลยให้
+          </p>
+          <p>
+            <b className="text-dusk-100">
+              🗺️ ด่านละ {QUESTIONS_PER_STAGE} ข้อ
+            </b>{' '}
+            ครบ {STAGE_COUNT} ด่านแล้วเจอ{' '}
+            <b className="text-dusk-100">👑 บอสสุดท้าย — ตอบถูก = ชนะ</b>
           </p>
         </div>
 
-        <div className="mb-4 sm:mb-6 grid gap-2.5 sm:gap-3 grid-cols-2 lg:grid-cols-4">
-          <Rule icon="❤️" title={`มี ${BALANCE.player.hearts} หัวใจ`}>
-            ชนสิ่งกีดขวางเสีย 1 ดวง หมดเมื่อไหร่ถึงคราวเสี่ยง
-          </Rule>
-          <Rule icon="🗺️" title={`${STAGE_COUNT} ด่าน ด่านละ ${QUESTIONS_PER_STAGE} ข้อ`}>
-            ผ่านครบทุกด่านแล้วจะเจอคำถามบอสสุดท้าย
-          </Rule>
-          <Rule icon="💀" title="ตายแล้วฟื้นได้">
-            ตอบคำถามฟื้นถูก = กลับไปที่จุดตรวจล่าสุด (ฟื้นได้ {BALANCE.player.maxRevives} ครั้ง)
-          </Rule>
-          <Rule icon="👑" title="ตอบบอสถูก = ชนะ">
-            เอาชนะกำแพงลาวาได้ พร้อมโบนัส {BALANCE.score.victoryBonus} คะแนน
-          </Rule>
-        </div>
-
         {error && (
-          <p className="mb-4 rounded-xl border border-lava-500/40 bg-lava-600/15 px-4 py-2.5 text-xs sm:text-sm text-dusk-100">
+          <p className="mb-2 rounded-xl border border-lava-500/40 bg-lava-600/15 px-3 py-2 text-xs text-dusk-100">
             {error}
           </p>
         )}
 
-        <div className="flex flex-col gap-2 sm:gap-3 sm:flex-row">
+        {/* ปุ่มหลักเด่นสุด ปุ่มรองเล็กลง — ไม่ให้ผู้เล่นลังเลว่าต้องกดอันไหน */}
+        <div className="flex gap-2">
           <button
             onClick={onStart}
             disabled={busy}
-            className="btn-primary flex-1 rounded-xl py-2.5 sm:py-3.5 text-base sm:text-lg font-bold"
+            className="btn-primary flex-1 rounded-2xl py-3 text-base font-bold sm:py-4 sm:text-lg"
           >
             {busy ? 'กำลังเตรียมด่าน…' : '▶  เริ่มวิ่ง'}
           </button>
-          <button onClick={onLeaderboard} className="btn-ghost rounded-xl px-5 py-2.5 sm:py-3.5 text-sm sm:text-base">
-            🏆 กระดานคะแนน
+          <button
+            onClick={onLeaderboard}
+            className="btn-ghost flex h-auto min-w-[52px] items-center justify-center rounded-2xl px-3 text-lg"
+            aria-label="กระดานคะแนน"
+          >
+            🏆
           </button>
           <button
-            onClick={() => setShowPasswordModal(true)}
-            className="btn-ghost rounded-xl px-4 py-2.5 sm:py-3.5 text-amber-400 hover:text-amber-300 text-sm sm:text-base"
-            title="หน้าจัดการสำหรับครู"
+            onClick={() => setScreen('teacher')}
+            className="btn-ghost flex h-auto min-w-[52px] items-center justify-center rounded-2xl px-3 text-lg"
+            aria-label="สำหรับครูผู้สอน"
           >
-            👨‍🏫 ครู
+            👨‍🏫
           </button>
         </div>
 
         <IosHomeScreenHint />
       </div>
-
-      <TeacherPasswordModal
-        isOpen={showPasswordModal}
-        onClose={() => setShowPasswordModal(false)}
-        onSuccess={() => {
-          setShowPasswordModal(false);
-          setScreen('teacher');
-        }}
-      />
-    </div>
-  );
-}
-
-function Rule({
-
-  icon,
-  title,
-  children,
-}: {
-  icon: string;
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="rounded-2xl bg-white/5 p-4">
-      <div className="mb-1 text-2xl">{icon}</div>
-      <div className="text-sm font-semibold text-dusk-100">{title}</div>
-      <div className="text-xs text-white/55">{children}</div>
     </div>
   );
 }

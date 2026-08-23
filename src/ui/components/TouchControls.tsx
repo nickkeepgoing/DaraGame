@@ -41,16 +41,19 @@ export function TouchControls() {
 
   return (
     <div className="safe-inset pointer-events-none absolute inset-0 z-10 select-none">
-      {/* ซ้าย: เดิน */}
-      <div className="absolute bottom-3 left-3 flex items-end gap-3">
-        <PadButton keys={['left']} size={76} label="ถอย" glyph="◀" />
-        <PadButton keys={['right']} size={76} label="เร่ง" glyph="▶" />
+      {/* ซ้าย: เดิน
+          ขนาดปุ่มสะท้อน "ความถี่ที่ใช้จริง" ไม่ใช่ให้เท่ากันหมด
+          เร่ง = กดค้างเกือบตลอดเกมเพื่อหนีลาวา → ใหญ่
+          ถอย = แทบไม่ได้ใช้ และถอยไปก็เจอลาวา → เล็กสุด แต่ยังได้ 56px ตามมาตรฐาน */}
+      <div className="absolute bottom-3 left-3 flex items-end gap-2.5">
+        <PadButton keys={['left']} size={56} label="ถอย" glyph="◀" />
+        <PadButton keys={['right']} size={88} label="เร่ง" glyph="▶" tone="cool" />
       </div>
 
-      {/* ขวา: กระโดด / หมอบ */}
-      <div className="absolute right-3 bottom-3 flex items-end gap-3">
-        <PadButton keys={['duck']} size={76} label="หมอบ" glyph="▼" tone="cool" />
-        <PadButton keys={['jump']} size={104} label="กระโดด" glyph="▲" tone="hot" />
+      {/* ขวา: กระโดด / หมอบ — กระโดดใหญ่สุดเพราะใช้บ่อยสุดและพลาดไม่ได้ */}
+      <div className="absolute right-3 bottom-3 flex items-end gap-2.5">
+        <PadButton keys={['duck']} size={72} label="หมอบ" glyph="▼" tone="cool" />
+        <PadButton keys={['jump']} size={96} label="กระโดด" glyph="▲" tone="hot" />
       </div>
     </div>
   );

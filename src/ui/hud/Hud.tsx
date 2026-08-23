@@ -7,6 +7,15 @@ interface Props {
   onQuit: () => void;
 }
 
+/**
+ * HUD ระหว่างเล่น
+ *
+ * หลักที่ยึด: จอมือถือแนวนอนสูงแค่ ~360 px และผู้เล่นมีเวลามองแค่เสี้ยววินาที
+ *   • ทุกอย่างอยู่แถวเดียว สูงรวมไม่เกิน ~64 px
+ *   • ใช้ไอคอนแทนข้อความทุกที่ที่ทำได้ (อ่านเร็วกว่าและกินที่น้อยกว่า)
+ *   • ไม่โชว์ตัวเลขที่ผู้เล่นเอาไปทำอะไรไม่ได้ เช่น "580 px"
+ *     ระยะห่างกำแพงบอกเป็น "สถานะ" (ปลอดภัย/ระวัง/อันตราย) + แถบสี เข้าใจได้ทันที
+ */
 export function Hud({ onQuit }: Props) {
   const hud = useGameStore((s) => s.hud);
   const setHud = useGameStore((s) => s.setHud);
@@ -21,95 +30,117 @@ export function Hud({ onQuit }: Props) {
   const danger = Math.max(0, Math.min(1, 1 - hud.wallGapPx / BALANCE.wall.maxGapPx));
   const isBoss = hud.stage > STAGE_COUNT;
 
+  const status = !hud.chaseStarted
+    ? { text: 'ลาวายังไม่ออกวิ่ง', tone: 'text-white/50' }
+    : danger > 0.82
+      ? { text: 'อันตราย! วิ่งเร็วเข้า', tone: 'text-lava-400 animate-soft-pulse' }
+      : danger > 0.6
+        ? { text: 'ลาวาใกล้เข้ามาแล้ว', tone: 'text-dusk-200' }
+        : { text: 'ยังห่างอยู่ ปลอดภัย', tone: 'text-leaf-400' };
+
   return (
     <>
       <div className="safe-inset pointer-events-none absolute inset-x-0 top-0 z-20">
-        <div className="flex items-start justify-between gap-2">
-          {/* หัวใจ + ด่าน */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center gap-1.5 rounded-2xl bg-night-900/70 px-3 py-1.5 backdrop-blur-sm">
-              {Array.from({ length: BALANCE.player.hearts }, (_, i) => (
-                <span
-                  key={i}
-                  className={`text-lg transition-opacity ${i < hud.hearts ? '' : 'opacity-25 grayscale'}`}
-                >
-                  ❤️
-                </span>
-              ))}
-              {hud.revivesLeft > 0 && (
-                <span
-                  className="ml-1 text-[11px] text-white/45"
-                  title="ตอบคำถามถูกตอนตายเพื่อฟื้นกลับมาเล่นต่อ"
-                >
-                  ฟื้นได้ {hud.revivesLeft}
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 self-start rounded-2xl bg-night-900/70 px-3 py-1.5 backdrop-blur-sm">
+        <div className="flex items-center justify-between gap-2">
+          {/* ซ้าย: หัวใจ + สิทธิ์ฟื้น */}
+          <div className="flex items-center gap-1 rounded-full bg-night-900/75 px-2.5 py-1.5 backdrop-blur-sm">
+            {Array.from({ length: BALANCE.player.hearts }, (_, i) => (
               <span
-                className={`text-xs font-semibold ${isBoss ? 'text-dusk-100' : 'text-dusk-200'}`}
+                key={i}
+                className={`text-base leading-none transition-all ${
+                  i < hud.hearts ? '' : 'scale-90 opacity-25 grayscale'
+                }`}
               >
-                {isBoss ? '👑 บอสสุดท้าย' : `ด่าน ${hud.stage}/${STAGE_COUNT}`}
+                ❤️
+              </span>
+            ))}
+            {hud.revivesLeft > 0 && (
+              <span
+                className="tabular ml-0.5 flex items-center gap-0.5 rounded-full bg-white/10 px-1.5 text-[11px] leading-5 text-white/70"
+                title={`ตายแล้วตอบคำถามถูก ฟื้นได้อีก ${hud.revivesLeft} ครั้ง`}
+              >
+                ✨{hud.revivesLeft}
+              </span>
+            )}
+          </div>
+
+          {/* กลาง: ด่าน + คะแนน + ระยะทาง */}
+          <div className="flex items-center gap-2.5 rounded-full bg-night-900/75 px-3 py-1 backdrop-blur-sm">
+            <span className="flex items-center gap-1.5">
+              <span
+                className={`text-[11px] font-semibold whitespace-nowrap ${
+                  isBoss ? 'text-dusk-100' : 'text-dusk-200'
+                }`}
+              >
+                {isBoss ? '👑 บอส' : `ด่าน ${hud.stage}/${STAGE_COUNT}`}
               </span>
               {!isBoss && (
-                <span className="flex gap-1">
+                <span className="flex gap-0.5">
                   {Array.from({ length: QUESTIONS_PER_STAGE }, (_, i) => (
                     <span
                       key={i}
-                      className={`h-1.5 w-4 rounded-full ${
-                        i < hud.stageProgress ? 'bg-leaf-400' : 'bg-white/20'
+                      className={`h-1.5 w-3 rounded-full ${
+                        i < hud.stageProgress ? 'bg-leaf-400' : 'bg-white/25'
                       }`}
                     />
                   ))}
                 </span>
               )}
-            </div>
+            </span>
+
+            <span className="h-5 w-px bg-white/15" />
+            <ScoreChip score={quizScore} />
+            <span className="h-5 w-px bg-white/15" />
+            <span className="tabular text-sm leading-none font-semibold text-dusk-100">
+              {hud.distanceM}
+              <span className="ml-0.5 text-[10px] font-normal text-white/45">ม.</span>
+            </span>
           </div>
 
-          {/* คะแนน + ระยะทาง */}
-          <div className="flex items-center gap-4 rounded-2xl bg-night-900/70 px-4 py-1.5 backdrop-blur-sm">
-            <Stat label="ระยะทาง" value={`${hud.distanceM} ม.`} />
-            <div className="h-7 w-px bg-white/15" />
-            <ScoreStat score={quizScore} />
-          </div>
-
-          <div className="flex gap-2">
+          {/* ขวา: ปุ่มระบบ — ทุกปุ่มอย่างน้อย 44x44 ตามมาตรฐาน touch target */}
+          <div className="flex gap-1.5">
             <button
               onClick={toggleMute}
-              className="btn-ghost pointer-events-auto rounded-xl px-3 py-2 text-sm"
+              className="btn-ghost pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-base"
               aria-label={muted ? 'เปิดเสียง' : 'ปิดเสียง'}
             >
               {muted ? '🔇' : '🔊'}
             </button>
             <button
               onClick={onQuit}
-              className="btn-ghost pointer-events-auto rounded-xl px-3 py-2 text-sm"
+              className="btn-ghost pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-base"
+              aria-label="ออกจากเกม"
             >
-              ออก
+              ✕
             </button>
           </div>
         </div>
 
-        {/* มาตรวัดระยะห่างกำแพง */}
-        <div className="mx-auto mt-2 max-w-md">
-          <div className="mb-1 flex items-center justify-between px-1 text-[11px]">
-            <span className="text-lava-400">🌋 กำแพงลาวา</span>
-            <span className={danger > 0.75 ? 'animate-soft-pulse text-lava-400' : 'text-white/45'}>
-              {hud.chaseStarted ? `${hud.wallGapPx} px` : 'ยังไม่ออกวิ่ง'}
-            </span>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-night-900/70">
+        {/* แถบระยะห่างกำแพงลาวา — บอกเป็นสถานะ ไม่ใช่ตัวเลข px */}
+        <div className="mx-auto mt-1.5 max-w-xs">
+          <div className="relative h-2.5 overflow-hidden rounded-full bg-night-900/75">
             <div
-              className="h-full rounded-full transition-[width] duration-100 ease-linear"
+              className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-150 ease-linear"
               style={{
-                width: `${danger * 100}%`,
+                width: `${Math.max(danger * 100, 4)}%`,
                 background:
-                  danger > 0.75
-                    ? 'linear-gradient(90deg,#ff9c41,#ff6b3d)'
-                    : 'linear-gradient(90deg,#ffc79a,#ff9c41)',
+                  danger > 0.82
+                    ? 'linear-gradient(90deg,#e14a2b,#ff6b3d)'
+                    : danger > 0.6
+                      ? 'linear-gradient(90deg,#ff9c41,#ffc79a)'
+                      : 'linear-gradient(90deg,#9bd17b,#ffc79a)',
               }}
             />
+            {/* หัวลาวาไล่ตาม — เห็นแล้วรู้ทันทีว่าอะไรกำลังไล่มา */}
+            <span
+              className="absolute top-1/2 -translate-y-1/2 text-[11px] leading-none transition-[left] duration-150 ease-linear"
+              style={{ left: `calc(${Math.max(danger * 100, 4)}% - 10px)` }}
+            >
+              🌋
+            </span>
+          </div>
+          <div className={`mt-0.5 text-center text-[10px] leading-tight ${status.tone}`}>
+            {status.text}
           </div>
         </div>
       </div>
@@ -120,12 +151,12 @@ export function Hud({ onQuit }: Props) {
 }
 
 /**
- * คะแนนคำถามพร้อมเอฟเฟกต์ตอนได้คะแนนเพิ่ม
+ * คะแนนคำถามพร้อมเอฟเฟกต์ตอนได้เพิ่ม
  *
  * ตัวเลขที่เปลี่ยนเงียบๆ ผู้เล่นมองไม่เห็น เพราะสายตาจดจ่ออยู่กับตัวละคร
- * จึงต้องมีทั้ง (1) ตัวเลขเด้ง (2) ป้าย "+N" ลอยขึ้น เพื่อให้รู้ว่าได้คะแนนแล้วจริง
+ * จึงต้องมีทั้งตัวเลขเด้งและป้าย "+N" ลอยขึ้น
  */
-function ScoreStat({ score }: { score: number }) {
+function ScoreChip({ score }: { score: number }) {
   const [gain, setGain] = useState(0);
   const [bump, setBump] = useState(false);
   const prevRef = useRef(score);
@@ -146,21 +177,21 @@ function ScoreStat({ score }: { score: number }) {
   }, [score]);
 
   return (
-    <div className="relative text-center">
-      <div className="text-[10px] leading-tight text-white/45">คะแนนคำถาม</div>
-      <div
-        className={`tabular text-lg leading-tight font-semibold text-leaf-400 transition-transform duration-200 ${
-          bump ? 'scale-150' : 'scale-100'
+    <span className="relative flex items-center gap-1">
+      <span className="text-[13px] leading-none">⭐</span>
+      <span
+        className={`tabular text-sm leading-none font-bold text-leaf-400 transition-transform duration-200 ${
+          bump ? 'scale-[1.45]' : 'scale-100'
         }`}
       >
         {score}
-      </div>
+      </span>
       {gain > 0 && (
-        <div className="animate-score-pop tabular pointer-events-none absolute -top-1 left-1/2 -translate-x-1/2 text-sm font-bold text-leaf-400">
+        <span className="animate-score-pop tabular pointer-events-none absolute -top-1 left-1/2 text-xs font-bold text-leaf-400">
           +{gain}
-        </div>
+        </span>
       )}
-    </div>
+    </span>
   );
 }
 
@@ -181,30 +212,11 @@ function StageBanner() {
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-      <div className="animate-pop-in rounded-3xl border border-dusk-200/40 bg-night-900/85 px-8 py-5 text-center backdrop-blur-sm">
-        <div className="font-display text-3xl font-bold text-dusk-100">{banner.name}</div>
-        <div className="mt-1 text-sm text-white/55">คำถามจะยากขึ้นแล้วนะ 🔥</div>
-      </div>
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string | number;
-  accent?: boolean;
-}) {
-  return (
-    <div className="text-center">
-      <div className="text-[10px] leading-tight text-white/45">{label}</div>
-      <div
-        className={`tabular text-lg leading-tight font-semibold ${accent ? 'text-leaf-400' : 'text-dusk-100'}`}
-      >
-        {value}
+      <div className="animate-pop-in rounded-2xl border border-dusk-200/40 bg-night-900/90 px-6 py-3 text-center backdrop-blur-sm">
+        <div className="font-display text-xl font-bold text-dusk-100 sm:text-3xl">
+          {banner.name}
+        </div>
+        <div className="mt-0.5 text-xs text-white/60">คำถามจะยากขึ้นแล้วนะ 🔥</div>
       </div>
     </div>
   );

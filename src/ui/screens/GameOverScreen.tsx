@@ -14,12 +14,14 @@ export function GameOverScreen({ onPlayAgain, onLeaderboard, onMenu }: Props) {
   const won = result?.victory === true;
 
   return (
-    <div className="safe-inset absolute inset-0 z-30 flex items-start justify-center overflow-y-auto bg-night-950/85 backdrop-blur-sm">
+    <div className="safe-inset absolute inset-0 z-30 flex items-center justify-center bg-night-950/85 backdrop-blur-sm">
       <div
-        className={`animate-pop-in panel my-auto w-full max-w-3xl rounded-3xl p-6 sm:p-8 ${
+        className={`animate-pop-in panel flex max-h-full w-full max-w-3xl flex-col overflow-hidden rounded-3xl ${
           won ? 'ring-2 ring-leaf-500/60' : ''
         }`}
       >
+        {/* ส่วนเนื้อหาเลื่อนได้ — สรุปคะแนนกับข้อที่พลาดอาจยาวเกินจอมือถือ */}
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-7">
         <div className="mb-1 text-center text-5xl">{won ? '👑' : '☄️'}</div>
         <h2
           className={`font-display mb-1 text-center text-3xl font-bold ${
@@ -73,7 +75,7 @@ export function GameOverScreen({ onPlayAgain, onLeaderboard, onMenu }: Props) {
             <h3 className="font-display mb-2.5 text-lg font-semibold text-dusk-100">
               📖 ทบทวนข้อที่พลาด
             </h3>
-            <div className="max-h-64 space-y-2.5 overflow-y-auto pr-1">
+            <div className="space-y-2.5">
               {missed.map((a, i) => (
                 <div key={i} className="rounded-2xl bg-white/5 p-4">
                   <p className="mb-1.5 text-sm font-medium text-white">{a.stem}</p>
@@ -86,15 +88,31 @@ export function GameOverScreen({ onPlayAgain, onLeaderboard, onMenu }: Props) {
           </div>
         )}
 
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <button onClick={onPlayAgain} className="btn-primary flex-1 rounded-xl py-3.5 text-lg">
+        </div>
+
+        {/* แถบปุ่มติดล่างเสมอ
+            เดิมปุ่มพวกนี้อยู่ท้ายเนื้อหา พอจอมือถือเตี้ยมันเลยหลุดออกนอกจอ
+            ผู้เล่นจบเกมแล้วกด "เล่นอีกรอบ" ไม่ได้เลยถ้าไม่รู้ว่าต้องเลื่อน */}
+        <div className="flex shrink-0 gap-2 border-t border-white/10 bg-night-900/60 p-3">
+          <button
+            onClick={onPlayAgain}
+            className="btn-primary flex-1 rounded-xl py-3 text-base font-bold"
+          >
             ↻ เล่นอีกรอบ
           </button>
-          <button onClick={onLeaderboard} className="btn-ghost rounded-xl px-6 py-3.5">
-            🏆 กระดานคะแนน
+          <button
+            onClick={onLeaderboard}
+            className="btn-ghost flex min-w-[52px] items-center justify-center rounded-xl px-3 text-lg"
+            aria-label="กระดานคะแนน"
+          >
+            🏆
           </button>
-          <button onClick={onMenu} className="btn-ghost rounded-xl px-6 py-3.5">
-            เมนูหลัก
+          <button
+            onClick={onMenu}
+            className="btn-ghost flex min-w-[52px] items-center justify-center rounded-xl px-3 text-lg"
+            aria-label="เมนูหลัก"
+          >
+            🏠
           </button>
         </div>
       </div>
