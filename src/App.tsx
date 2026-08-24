@@ -3,7 +3,7 @@ import { api } from '@/api';
 import { onBus, emitBus } from '@/game/EventBus';
 import { PhaserGame } from '@/game/PhaserGame';
 import { useGameStore } from '@/store/gameStore';
-import { setMuted, stopMusic, unlock } from '@/audio/sfx';
+import { setCustomMusicUrl, setMuted, stopMusic, unlock } from '@/audio/sfx';
 import { releaseWakeLock, requestWakeLock, watchWakeLock } from '@/lib/mobile';
 
 import { LoginScreen } from '@/ui/screens/LoginScreen';
@@ -55,6 +55,9 @@ export default function App() {
   }, [setSession, setScreen]);
 
   useEffect(() => setMuted(muted), [muted]);
+
+  /* --------- ครูตั้งเพลงพื้นหลังของห้องไว้ -> ใช้แทนเพลงสังเคราะห์เริ่มต้น --------- */
+  useEffect(() => setCustomMusicUrl(session?.musicUrl ?? null), [session?.musicUrl]);
 
   /* --------- มือถือ: กันจอดับระหว่างเล่น --------- */
   useEffect(() => {

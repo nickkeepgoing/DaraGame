@@ -317,15 +317,22 @@ end $$;
 -- ---------------------------------------------------------------------
 -- teacher_create_class — สร้างห้องเรียนใหม่สำหรับครู
 -- ---------------------------------------------------------------------
+-- ทิ้งซิกเนเจอร์เก่า (3 พารามิเตอร์) ก่อนเสมอ — เพิ่ม p_music_url เข้าไปทำให้
+-- จำนวนอาร์กิวเมนต์เปลี่ยน "create or replace" แทนที่ฟังก์ชันเดิมไม่ได้
+-- (ต้อง argument list ตรงกันเป๊ะ) ถ้าไม่ทิ้งก่อนจะได้ฟังก์ชันซ้อนกันสองตัว
+drop function if exists teacher_create_class(text, text, bigint);
+
 create or replace function teacher_create_class(
   p_name       text,
   p_join_code  text,
-  p_level_seed bigint default null
+  p_level_seed bigint default null,
+  p_music_url  text default null
 ) returns classes
 language plpgsql security definer set search_path = public, extensions as $$
 declare
   v_class classes%rowtype;
   v_code  text := upper(btrim(p_join_code));
+  v_music text := nullif(btrim(coalesce(p_music_url, '')), '');
 begin
   if auth.uid() is null then
     raise exception 'ต้องเข้าสู่ระบบก่อน' using errcode = '28000';
@@ -335,32 +342,45 @@ begin
     raise exception 'รหัสห้องเรียนนี้ถูกใช้งานแล้ว โปรดใช้รหัสอื่น' using errcode = '23505';
   end if;
 
-  insert into classes (name, join_code, teacher_id, level_seed, is_open)
-  values (btrim(p_name), v_code, auth.uid(), p_level_seed, true)
+  if v_music is not null and v_music !~ '^https?://' then
+    raise exception 'ลิงก์เพลงต้องขึ้นต้นด้วย http:// หรือ https://' using errcode = '22000';
+  end if;
+
+  insert into classes (name, join_code, teacher_id, level_seed, is_open, music_url)
+  values (btrim(p_name), v_code, auth.uid(), p_level_seed, true, v_music)
   returning * into v_class;
 
   return v_class;
 end $$;
 
 -- ---------------------------------------------------------------------
--- teacher_update_class — แก้ไขสถานะห้องเรียน (เปิด/ปิด, เปลี่ยน seed)
+-- teacher_update_class — แก้ไขสถานะห้องเรียน (เปิด/ปิด, เปลี่ยน seed, เพลงพื้นหลัง)
 -- ---------------------------------------------------------------------
+drop function if exists teacher_update_class(uuid, boolean, bigint);
+
 create or replace function teacher_update_class(
   p_class_id   uuid,
   p_is_open    boolean,
-  p_level_seed bigint default null
+  p_level_seed bigint default null,
+  p_music_url  text default null
 ) returns classes
 language plpgsql security definer set search_path = public, extensions as $$
 declare
   v_class classes%rowtype;
+  v_music text := nullif(btrim(coalesce(p_music_url, '')), '');
 begin
   if auth.uid() is null then
     raise exception 'ต้องเข้าสู่ระบบก่อน' using errcode = '28000';
   end if;
 
+  if v_music is not null and v_music !~ '^https?://' then
+    raise exception 'ลิงก์เพลงต้องขึ้นต้นด้วย http:// หรือ https://' using errcode = '22000';
+  end if;
+
   update classes
      set is_open    = p_is_open,
-         level_seed = p_level_seed
+         level_seed = p_level_seed,
+         music_url  = v_music
    where id = p_class_id and teacher_id = auth.uid()
   returning * into v_class;
 
@@ -382,6 +402,6 @@ grant execute on function next_question(uuid, text, smallint)          to authen
 grant execute on function answer_question(uuid, uuid, uuid, integer)   to authenticated;
 grant execute on function finish_run(uuid, integer, smallint, text)    to authenticated;
 
-grant execute on function teacher_create_class(text, text, bigint)     to authenticated;
-grant execute on function teacher_update_class(uuid, boolean, bigint) to authenticated;
+grant execute on function teacher_create_class(text, text, bigint, text)     to authenticated;
+grant execute on function teacher_update_class(uuid, boolean, bigint, text) to authenticated;
 

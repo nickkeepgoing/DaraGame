@@ -49,6 +49,9 @@
 > 2. วาง db/03_rpc.sql → Run
 > 3. npm run import:questions
 > ```
+>
+> ตั้งแต่มีฟีเจอร์ "ครูตั้งเพลงพื้นหลัง" ให้รัน [`db/05_add_bg_music.sql`](../db/05_add_bg_music.sql)
+> เพิ่มอีกไฟล์หนึ่งด้วย (เพิ่มคอลัมน์ `classes.music_url` — พึ่งพาตัวเองได้ ไม่ต้องรัน 03 ต่อ)
 
 <details>
 <summary>ถ้าอยากใช้ Supabase CLI แทนการ copy-paste</summary>

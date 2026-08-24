@@ -32,52 +32,65 @@
 
 /* ------------------------------------------------------------------
    Base
+
+   ⚠️ ต้องอยู่ใน @layer base เท่านั้น — CSS เปล่าๆ นอก @layer ใน Tailwind v4
+   มีลำดับความสำคัญ "เหนือกว่า" ทุก @layer เสมอไม่ว่าจะประกาศก่อนหรือหลัง
+   ก่อนหน้านี้ button{touch-action:manipulation} ที่ไม่มี @layer เลยทับ
+   utility class `touch-none` ของปุ่มกระโดด/หมอบใน TouchControls.tsx เสมอ
+   ผลคือ "manipulation" ยอมให้เบราว์เซอร์ตีความสองนิ้วพร้อมกันเป็นท่า
+   pinch-zoom แล้วกินสัมผัสนิ้วที่สองไป ปุ่มที่สองเลยไม่ทำงาน (กดสองปุ่ม
+   พร้อมกันไม่ได้) — ย้ายเข้า @layer base ให้ utilities (ซึ่งอยู่ layer
+   หลังกว่า) ชนะได้ตามที่ตั้งใจไว้จริงๆ
    ------------------------------------------------------------------ */
-html,
-body,
-#root {
-  /* ไล่จากตัวสำรองหยาบสุดไปแม่นสุด — ตัวหลังทับตัวหน้าถ้าเบราว์เซอร์รองรับ
-       100%    : ตัวสำรองสุดท้าย
-       100dvh  : ความสูงที่เห็นจริง (เบราว์เซอร์ใหม่)
-       --app-h : วัดจาก visualViewport ด้วย JS — แม่นที่สุด ดู src/lib/viewport.ts
-     ⚠️ ต้องมี --app-h เพราะเจอกับตาแล้วว่า 100dvh ให้ค่า 720px ทั้งที่จอสูง 360px
-        ทำให้ปุ่มที่วางด้วย bottom-* หลุดไปอยู่ใต้จอ กดไม่ได้เลย */
-  height: 100%;
-  height: 100dvh;
-  height: var(--app-h, 100dvh);
-  margin: 0;
-  overscroll-behavior: none;
-}
+@layer base {
+  html,
+  body,
+  #root {
+    /* ไล่จากตัวสำรองหยาบสุดไปแม่นสุด — ตัวหลังทับตัวหน้าถ้าเบราว์เซอร์รองรับ
+         100%    : ตัวสำรองสุดท้าย
+         100dvh  : ความสูงที่เห็นจริง (เบราว์เซอร์ใหม่)
+         --app-h : วัดจาก visualViewport ด้วย JS — แม่นที่สุด ดู src/lib/viewport.ts
+       ⚠️ ต้องมี --app-h เพราะเจอกับตาแล้วว่า 100dvh ให้ค่า 720px ทั้งที่จอสูง 360px
+          ทำให้ปุ่มที่วางด้วย bottom-* หลุดไปอยู่ใต้จอ กดไม่ได้เลย */
+    height: 100%;
+    height: 100dvh;
+    height: var(--app-h, 100dvh);
+    margin: 0;
+    overscroll-behavior: none;
+  }
 
-body {
-  font-family: var(--font-body);
-  /* ภาษาไทยมีสระบน/ล่าง + วรรณยุกต์ซ้อนได้ 3 ชั้น -> ต้องมีที่หายใจ */
-  line-height: 1.65;
-  background: var(--color-night-950);
-  color: #fff;
-  -webkit-font-smoothing: antialiased;
-  -webkit-tap-highlight-color: transparent;
+  body {
+    font-family: var(--font-body);
+    /* ภาษาไทยมีสระบน/ล่าง + วรรณยุกต์ซ้อนได้ 3 ชั้น -> ต้องมีที่หายใจ */
+    line-height: 1.65;
+    background: var(--color-night-950);
+    color: #fff;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
 
-  /* กัน pull-to-refresh และการดีดตัวของหน้าจอตอนกดปุ่มรัวๆ บนมือถือ */
-  position: fixed;
-  inset: 0;
-  overflow: hidden;
-  touch-action: manipulation;
-}
+    /* กัน pull-to-refresh และการดีดตัวของหน้าจอตอนกดปุ่มรัวๆ บนมือถือ */
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    touch-action: manipulation;
+  }
 
-/* กัน browser scroll / pinch-zoom แทรกตอนเล่นบนมือถือ */
-canvas {
-  display: block;
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-}
+  /* กัน browser scroll / pinch-zoom แทรกตอนเล่นบนมือถือ */
+  canvas {
+    display: block;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
 
-button {
-  font-family: inherit;
-  cursor: pointer;
-  /* กัน double-tap zoom ตอนกดปุ่มตัวเลือกคำตอบเร็วๆ */
-  touch-action: manipulation;
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    /* กัน double-tap zoom ตอนกดปุ่มตัวเลือกคำตอบเร็วๆ
+       ปุ่มที่ต้องกดพร้อมกันหลายปุ่ม (กระโดด/หมอบ) จะสั่ง touch-none
+       ทับค่านี้เองผ่าน utility class — ดูหมายเหตุด้านบน */
+    touch-action: manipulation;
+  }
 }
 
 /* ------------------------------------------------------------------

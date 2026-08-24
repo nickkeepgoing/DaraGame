@@ -17,16 +17,30 @@ let muted = false;
 export function unlock(): void {
   if (ctx) {
     if (ctx.state === 'suspended') void ctx.resume();
-    return;
+  } else {
+    const Ctor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (Ctor) {
+      ctx = new Ctor();
+      master = ctx.createGain();
+      master.gain.value = 0.28;
+      master.connect(ctx.destination);
+      if (ctx.state === 'suspended') void ctx.resume();
+    }
   }
-  const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-  if (!Ctor) return;
 
-  ctx = new Ctor();
-  master = ctx.createGain();
-  master.gain.value = 0.28;
-  master.connect(ctx.destination);
-  if (ctx.state === 'suspended') void ctx.resume();
+  // ปลดล็อก <audio> ของเพลงครูด้วยในจังหวะแตะเดียวกัน — iOS Safari ต้องมี
+  // user gesture ตรงๆ ถึงจะเล่นได้ ถ้ารอให้ startMusic() เรียกทีหลัง (ตอนเข้า
+  // ฉากเกม ซึ่งไม่ใช่ event จากการแตะแล้ว) จะโดนเบราว์เซอร์บล็อกเงียบๆ
+  if (customAudio) {
+    void customAudio
+      .play()
+      .then(() => {
+        if (!musicPlaying) customAudio?.pause();
+      })
+      .catch(() => undefined);
+  }
 }
 
 export function setMuted(value: boolean): void {
@@ -34,6 +48,7 @@ export function setMuted(value: boolean): void {
   if (master && ctx) {
     master.gain.setTargetAtTime(value ? 0 : 0.28, ctx.currentTime, 0.05);
   }
+  if (customAudio) customAudio.volume = value ? 0 : 0.35;
 }
 
 interface ToneOptions {
@@ -125,16 +140,54 @@ export const sfx = {
 
 /* ------------------------------------------------------------------ */
 /* เพลงพื้นหลัง — เข้มขึ้นเมื่อกำแพงใกล้ (dynamic music ตาม GDD ข้อ 7)   */
+/*                                                                      */
+/* ครูตั้งลิงก์ไฟล์เพลงของห้องได้ผ่านหน้าครู (classes.music_url) —      */
+/* ถ้ามี ให้เล่นไฟล์นั้นวนแทนเพลงสังเคราะห์ทั้งชุด (ไม่เล่นซ้อนกัน)      */
+/* เพราะเพลงสังเคราะห์มีไว้เป็นค่าเริ่มต้นตอนยังไม่มีไฟล์เสียงเท่านั้น    */
+/* (ดู docs/03-decisions.md ข้อ 6) — ตอบโจทย์เดียวกันคือ "มีเพลงเล่น"    */
 /* ------------------------------------------------------------------ */
 
 let musicTimer: number | null = null;
 let step = 0;
 let intensity = 0;
+let musicPlaying = false;
+
+let customAudio: HTMLAudioElement | null = null;
+
+/** ครูตั้ง/เปลี่ยนลิงก์เพลงประจำห้อง — เรียกได้ทุกเมื่อ (เช่นตอนรู้ session) */
+export function setCustomMusicUrl(url: string | null): void {
+  const next = url?.trim() || null;
+
+  if (customAudio) {
+    customAudio.pause();
+    customAudio.src = '';
+    customAudio = null;
+  }
+
+  if (next) {
+    const el = new Audio(next);
+    el.loop = true;
+    el.volume = muted ? 0 : 0.35;
+    el.preload = 'auto';
+    // ลิงก์เพี้ยน/โดน CORS/เซิร์ฟเวอร์เพลงล่ม — แค่เงียบ ไม่ทำเกมพัง
+    el.addEventListener('error', () => {
+      if (customAudio === el) customAudio = null;
+    });
+    customAudio = el;
+  }
+
+  // ถ้าเพลงกำลังเล่นอยู่ตอนสลับ ให้สลับแหล่งเสียงทันทีโดยไม่ต้องรอ start/stop ใหม่
+  if (musicPlaying) {
+    stopSynth();
+    if (customAudio) void customAudio.play().catch(() => undefined);
+    else startSynth();
+  }
+}
 
 const BASS = [55, 55, 73.42, 65.41];
 const LEAD = [220, 261.63, 329.63, 261.63, 293.66, 349.23, 293.66, 261.63];
 
-export function startMusic(): void {
+function startSynth(): void {
   if (musicTimer !== null || !ctx) return;
   step = 0;
   const tick = () => {
@@ -161,15 +214,33 @@ export function startMusic(): void {
   tick();
 }
 
-export function stopMusic(): void {
+function stopSynth(): void {
   if (musicTimer !== null) {
     clearInterval(musicTimer);
     musicTimer = null;
   }
+}
+
+export function startMusic(): void {
+  musicPlaying = true;
+  if (customAudio) {
+    void customAudio.play().catch(() => undefined);
+    return;
+  }
+  startSynth();
+}
+
+export function stopMusic(): void {
+  musicPlaying = false;
+  if (customAudio) {
+    customAudio.pause();
+    customAudio.currentTime = 0;
+  }
+  stopSynth();
   intensity = 0;
 }
 
-/** 0 = กำแพงยังไกล, 1 = จ่อหลังแล้ว */
+/** 0 = กำแพงยังไกล, 1 = จ่อหลังแล้ว — เพลงของครูไม่มีเลเยอร์ตามความเข้ม เล่นเฉยๆ */
 export function setMusicIntensity(value: number): void {
   intensity = Math.min(Math.max(value, 0), 1);
 }

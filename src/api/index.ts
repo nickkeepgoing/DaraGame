@@ -77,20 +77,22 @@ export const api = {
     name: string,
     joinCode: string,
     levelSeed?: number | null,
+    musicUrl?: string | null,
   ): Promise<import('@/types/game').TeacherClass> {
     return isOffline
-      ? localApi.createClass(name, joinCode, levelSeed)
-      : remoteApi.createClass(name, joinCode, levelSeed);
+      ? localApi.createClass(name, joinCode, levelSeed, musicUrl)
+      : remoteApi.createClass(name, joinCode, levelSeed, musicUrl);
   },
 
   async updateClass(
     classId: string,
     isOpen: boolean,
     levelSeed?: number | null,
+    musicUrl?: string | null,
   ): Promise<import('@/types/game').TeacherClass> {
     return isOffline
-      ? localApi.updateClass(classId, isOpen, levelSeed)
-      : remoteApi.updateClass(classId, isOpen, levelSeed);
+      ? localApi.updateClass(classId, isOpen, levelSeed, musicUrl)
+      : remoteApi.updateClass(classId, isOpen, levelSeed, musicUrl);
   },
 
   async getStudentProgress(classId?: string | null): Promise<import('@/types/game').StudentProgress[]> {

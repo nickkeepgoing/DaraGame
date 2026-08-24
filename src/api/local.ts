@@ -78,11 +78,31 @@ function timeLimitFor(q: RawQuestion): number {
 
 export const localApi = {
   async login(nickname: string, className: string | null): Promise<Session> {
+    // โหมดออฟไลน์ก็ยังอยากลองหาห้องที่ครูสร้างไว้ในเครื่องนี้ (ถ้ามี) เพื่อดึง
+    // ชื่อห้องจริงกับเพลงพื้นหลังที่ครูตั้งไว้มาใช้ — className ที่รับเข้ามาคือ
+    // join code ดิบๆ ที่พิมพ์ตอนล็อกอิน ไม่ใช่ชื่อห้อง
+    let resolvedClassName = className;
+    let musicUrl: string | null = null;
+    if (className) {
+      try {
+        const raw = localStorage.getItem('daragame.local.classes');
+        const classes = raw ? (JSON.parse(raw) as import('@/types/game').TeacherClass[]) : [];
+        const match = classes.find((c) => c.joinCode.toUpperCase() === className.toUpperCase());
+        if (match) {
+          resolvedClassName = match.name;
+          musicUrl = match.musicUrl ?? null;
+        }
+      } catch {
+        /* ไม่มีห้องในเครื่องนี้ก็ไม่เป็นไร ใช้ค่าที่พิมพ์มาตรงๆ */
+      }
+    }
+
     const session: Session = {
       playerId: `local-${nickname.toLowerCase()}`,
       nickname,
       classId: null,
-      className,
+      className: resolvedClassName,
+      musicUrl,
       offline: true,
     };
     localStorage.setItem(KEY_SESSION, JSON.stringify(session));
@@ -264,6 +284,7 @@ export const localApi = {
         name: 'ม.4/1 โลก ดาราศาสตร์ฯ',
         isOpen: true,
         levelSeed: 12345,
+        musicUrl: null,
         createdAt: new Date().toISOString(),
         studentCount: 12,
       },
@@ -273,6 +294,7 @@ export const localApi = {
         name: 'ม.4/2 โลก ดาราศาสตร์ฯ',
         isOpen: false,
         levelSeed: null,
+        musicUrl: null,
         createdAt: new Date().toISOString(),
         studentCount: 8,
       },
@@ -285,6 +307,7 @@ export const localApi = {
     name: string,
     joinCode: string,
     levelSeed?: number | null,
+    musicUrl?: string | null,
   ): Promise<import('@/types/game').TeacherClass> {
     const classes = await this.getTeacherClasses();
     const newClass: import('@/types/game').TeacherClass = {
@@ -293,6 +316,7 @@ export const localApi = {
       name: name.trim(),
       isOpen: true,
       levelSeed: levelSeed ?? null,
+      musicUrl: musicUrl?.trim() || null,
       createdAt: new Date().toISOString(),
       studentCount: 0,
     };
@@ -305,12 +329,14 @@ export const localApi = {
     classId: string,
     isOpen: boolean,
     levelSeed?: number | null,
+    musicUrl?: string | null,
   ): Promise<import('@/types/game').TeacherClass> {
     const classes = await this.getTeacherClasses();
     const target = classes.find((c) => c.id === classId);
     if (!target) throw new Error('ไม่พบห้องเรียนนี้');
     target.isOpen = isOpen;
     target.levelSeed = levelSeed ?? null;
+    target.musicUrl = musicUrl?.trim() || null;
     localStorage.setItem('daragame.local.classes', JSON.stringify(classes));
     return target;
   },

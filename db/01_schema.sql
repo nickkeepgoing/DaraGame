@@ -16,8 +16,13 @@ create table classes (
   teacher_id  uuid        references auth.users(id) on delete set null,
   is_open     boolean     not null default true,    -- ปิดรับเข้าห้องได้
   level_seed  bigint,                               -- ตั้งไว้ = ทั้งห้องเจอด่านเดียวกัน
+  -- ครูใส่ลิงก์ไฟล์เพลง (mp3/ogg ที่โหลดตรงได้ ไม่ใช่หน้า YouTube) ให้เล่นแทน
+  -- เพลงสังเคราะห์ในเกม — null = ใช้เพลงสังเคราะห์ปกติ (ดู src/audio/sfx.ts)
+  music_url   text,
   created_at  timestamptz not null default now(),
-  constraint join_code_fmt check (join_code ~ '^[A-Z0-9-]{4,20}$')
+  constraint join_code_fmt check (join_code ~ '^[A-Z0-9-]{4,20}$'),
+  constraint music_url_fmt check (music_url is null or music_url ~ '^https?://'),
+  constraint music_url_len check (music_url is null or char_length(music_url) <= 2048)
 );
 
 -- ---------------------------------------------------------------------

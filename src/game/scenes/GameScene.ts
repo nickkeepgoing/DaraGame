@@ -424,7 +424,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private placeGround(x: number, width: number): void {
-    const cutoff = this.cameras.main.scrollX - 400;
+    // ⚠️ ห้าม recycle ท่อนพื้นที่ครอบ checkpoint ล่าสุด (lastCheckpointX) ทิ้ง
+    // แม้จะเลยกล้องไปไกลแล้วก็ตาม — doRevive() เทเลพอร์ตผู้เล่นย้อนกลับไปยืนตรงนั้น
+    // ถ้าท่อนพื้นตรงนั้นถูกยกไปใช้สร้างพื้นใหม่ข้างหน้าไปแล้ว (recycle ปกติจะทำ
+    // ทันทีที่เลยกล้องไป 400px) ผู้เล่นจะฟื้นขึ้นมาลอยอยู่กลางอากาศแล้วตกทะลุพื้น
+    const cutoff = Math.min(this.cameras.main.scrollX - 400, this.lastCheckpointX - 200);
     let seg = this.segments.find((s) => s.right < cutoff);
 
     if (!seg) {

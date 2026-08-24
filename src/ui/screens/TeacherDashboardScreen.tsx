@@ -24,11 +24,13 @@ export function TeacherDashboardScreen({ onBack }: Props) {
   const [newClassName, setNewClassName] = useState('');
   const [newJoinCode, setNewJoinCode] = useState('');
   const [newSeed, setNewSeed] = useState<string>('');
+  const [newMusicUrl, setNewMusicUrl] = useState('');
   const [creating, setCreating] = useState(false);
 
-  /* Form state: Seed edit modal */
+  /* Form state: ห้องเรียน edit modal (Seed + เพลงพื้นหลัง) */
   const [editingClass, setEditingClass] = useState<TeacherClass | null>(null);
   const [editSeed, setEditSeed] = useState<string>('');
+  const [editMusicUrl, setEditMusicUrl] = useState('');
   const [updating, setUpdating] = useState(false);
 
   /* Password change state */
@@ -76,12 +78,13 @@ export function TeacherDashboardScreen({ onBack }: Props) {
     setError(null);
     try {
       const seedNum = newSeed.trim() ? Number(newSeed) : null;
-      const created = await api.createClass(newClassName, newJoinCode, seedNum);
+      const created = await api.createClass(newClassName, newJoinCode, seedNum, newMusicUrl);
       setClasses((prev) => [created, ...prev]);
       setShowCreateModal(false);
       setNewClassName('');
       setNewJoinCode('');
       setNewSeed('');
+      setNewMusicUrl('');
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -91,7 +94,10 @@ export function TeacherDashboardScreen({ onBack }: Props) {
 
   async function handleToggleOpen(cls: TeacherClass) {
     try {
-      const updated = await api.updateClass(cls.id, !cls.isOpen, cls.levelSeed);
+      // ⚠️ ต้องส่ง levelSeed/musicUrl เดิมของห้องไปด้วยเสมอ ไม่งั้น RPC จะเอา
+      // ค่า default (null) ไปเขียนทับ กลายเป็นแค่กด "เปิด/ปิดห้อง" แล้ว Seed
+      // กับเพลงพื้นหลังที่ตั้งไว้หายหมด
+      const updated = await api.updateClass(cls.id, !cls.isOpen, cls.levelSeed, cls.musicUrl);
       setClasses((prev) => prev.map((c) => (c.id === cls.id ? updated : c)));
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -106,7 +112,12 @@ export function TeacherDashboardScreen({ onBack }: Props) {
     setError(null);
     try {
       const seedNum = editSeed.trim() ? Number(editSeed) : null;
-      const updated = await api.updateClass(editingClass.id, editingClass.isOpen, seedNum);
+      const updated = await api.updateClass(
+        editingClass.id,
+        editingClass.isOpen,
+        seedNum,
+        editMusicUrl,
+      );
       setClasses((prev) => prev.map((c) => (c.id === editingClass.id ? updated : c)));
       setEditingClass(null);
     } catch (err) {
@@ -336,6 +347,12 @@ export function TeacherDashboardScreen({ onBack }: Props) {
                                   {cls.levelSeed !== null ? cls.levelSeed : 'สุ่มอัตโนมัติ (ไม่ fix)'}
                                 </span>
                               </div>
+                              <div className="flex justify-between gap-2">
+                                <span className="shrink-0">🎵 เพลงพื้นหลัง:</span>
+                                <span className="truncate text-right text-amber-300">
+                                  {cls.musicUrl ? 'ตั้งค่าแล้ว' : 'ค่าเริ่มต้นของเกม'}
+                                </span>
+                              </div>
                             </div>
                           </div>
 
@@ -344,10 +361,11 @@ export function TeacherDashboardScreen({ onBack }: Props) {
                               onClick={() => {
                                 setEditingClass(cls);
                                 setEditSeed(cls.levelSeed !== null ? String(cls.levelSeed) : '');
+                                setEditMusicUrl(cls.musicUrl ?? '');
                               }}
                               className="text-xs text-amber-400 hover:underline font-medium"
                             >
-                              ⚙️ ตั้งค่า Seed ด่านประจำวัน
+                              ⚙️ ตั้งค่าห้องเรียน
                             </button>
                             <button
                               onClick={() => {
@@ -606,6 +624,22 @@ export function TeacherDashboardScreen({ onBack }: Props) {
                 />
               </label>
 
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-dusk-100">
+                  🎵 ลิงก์เพลงพื้นหลัง (Optional)
+                </span>
+                <input
+                  type="url"
+                  value={newMusicUrl}
+                  onChange={(e) => setNewMusicUrl(e.target.value)}
+                  placeholder="เช่น https://example.com/song.mp3 (เว้นว่าง = เพลงเริ่มต้นของเกม)"
+                  className="w-full rounded-xl border border-white/20 bg-night-950 px-4 py-3 text-white outline-none focus:border-amber-400"
+                />
+                <span className="mt-1 block text-xs text-white/40">
+                  ต้องเป็นลิงก์ไฟล์เพลงที่โหลดตรงได้ (mp3/ogg) ไม่ใช่ลิงก์หน้าเว็บ YouTube
+                </span>
+              </label>
+
               <div className="flex justify-end gap-3 pt-4">
                 <button
                   type="button"
@@ -627,12 +661,12 @@ export function TeacherDashboardScreen({ onBack }: Props) {
         </div>
       )}
 
-      {/* ---------- MODAL: EDIT SEED ---------- */}
+      {/* ---------- MODAL: EDIT CLASS SETTINGS (Seed + เพลงพื้นหลัง) ---------- */}
       {editingClass && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="panel w-full max-w-md rounded-3xl p-7 border border-white/20 bg-night-900 shadow-2xl animate-pop-in">
             <h3 className="text-xl font-bold text-amber-400 mb-2">
-              ตั้งค่า Seed ด่าน: {editingClass.name}
+              ตั้งค่าห้องเรียน: {editingClass.name}
             </h3>
             <p className="text-xs text-white/60 mb-6">
               การกำหนด Seed จะทำให้นักเรียนทุกคนในห้องเจอตำแหน่งอุปสรรคและคำถามในด่านสลับเหมือนกันเป๊ะ
@@ -650,6 +684,22 @@ export function TeacherDashboardScreen({ onBack }: Props) {
                 />
               </label>
 
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-dusk-100">
+                  🎵 ลิงก์เพลงพื้นหลัง
+                </span>
+                <input
+                  type="url"
+                  value={editMusicUrl}
+                  onChange={(e) => setEditMusicUrl(e.target.value)}
+                  placeholder="เช่น https://example.com/song.mp3 (เว้นว่าง = เพลงเริ่มต้นของเกม)"
+                  className="w-full rounded-xl border border-white/20 bg-night-950 px-4 py-3 text-white outline-none focus:border-amber-400"
+                />
+                <span className="mt-1 block text-xs text-white/40">
+                  นักเรียนในห้องนี้จะได้ยินเพลงนี้แทนเพลงพื้นหลังเริ่มต้นของเกม
+                </span>
+              </label>
+
               <div className="flex justify-end gap-3 pt-4">
                 <button
                   type="button"
@@ -663,7 +713,7 @@ export function TeacherDashboardScreen({ onBack }: Props) {
                   disabled={updating}
                   className="btn-primary rounded-xl px-6 py-2.5 font-bold"
                 >
-                  {updating ? 'กำลังบันทึก…' : 'บันทึก Seed'}
+                  {updating ? 'กำลังบันทึก…' : 'บันทึกการตั้งค่า'}
                 </button>
               </div>
             </form>

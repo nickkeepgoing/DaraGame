@@ -29,6 +29,8 @@ export interface TeacherClass {
   name: string;
   isOpen: boolean;
   levelSeed: number | null;
+  /** ลิงก์ไฟล์เพลงพื้นหลัง (mp3/ogg โหลดตรงได้) ที่ครูตั้งให้ห้องนี้ — null = ใช้เพลงสังเคราะห์เดิม */
+  musicUrl: string | null;
   createdAt: string;
   studentCount?: number;
 }
@@ -64,6 +66,8 @@ export interface Session {
   nickname: string;
   classId: string | null;
   className: string | null;
+  /** เพลงพื้นหลังที่ครูตั้งให้ห้องนี้ — null = ใช้เพลงสังเคราะห์เดิมของเกม */
+  musicUrl: string | null;
   /** true = เล่นแบบไม่ต่อ backend (คะแนนเก็บใน localStorage เท่านั้น) */
   offline: boolean;
 }

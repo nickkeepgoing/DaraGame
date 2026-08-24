@@ -72,7 +72,7 @@ export const remoteApi = {
     const player = data as PlayerRow;
     const { data: cls } = await client()
       .from('classes')
-      .select('name')
+      .select('name, music_url')
       .eq('id', player.class_id ?? '')
       .maybeSingle();
 
@@ -81,6 +81,7 @@ export const remoteApi = {
       nickname: player.nickname,
       classId: player.class_id,
       className: (cls as { name: string } | null)?.name ?? null,
+      musicUrl: (cls as { music_url: string | null } | null)?.music_url ?? null,
       offline: false,
     };
   },
@@ -92,17 +93,20 @@ export const remoteApi = {
 
     const { data, error } = await client()
       .from('players')
-      .select('id, nickname, class_id, classes(name)')
+      .select('id, nickname, class_id, classes(name, music_url)')
       .eq('auth_uid', sess.session.user.id)
       .maybeSingle();
     if (error || !data) return null;
 
-    const row = data as unknown as PlayerRow & { classes: { name: string } | null };
+    const row = data as unknown as PlayerRow & {
+      classes: { name: string; music_url: string | null } | null;
+    };
     return {
       playerId: row.id,
       nickname: row.nickname,
       classId: row.class_id,
       className: row.classes?.name ?? null,
+      musicUrl: row.classes?.music_url ?? null,
       offline: false,
     };
   },
@@ -241,7 +245,7 @@ export const remoteApi = {
   async getTeacherClasses(): Promise<import('@/types/game').TeacherClass[]> {
     const { data, error } = await client()
       .from('classes')
-      .select('id, join_code, name, is_open, level_seed, created_at, players(count)')
+      .select('id, join_code, name, is_open, level_seed, music_url, created_at, players(count)')
       .order('created_at', { ascending: false });
 
     if (error) throw new Error(error.message);
@@ -252,6 +256,7 @@ export const remoteApi = {
       name: row.name,
       isOpen: row.is_open,
       levelSeed: row.level_seed ? Number(row.level_seed) : null,
+      musicUrl: row.music_url ?? null,
       createdAt: row.created_at,
       studentCount: row.players?.[0]?.count ?? 0,
     }));
@@ -261,11 +266,13 @@ export const remoteApi = {
     name: string,
     joinCode: string,
     levelSeed?: number | null,
+    musicUrl?: string | null,
   ): Promise<import('@/types/game').TeacherClass> {
     const { data, error } = await client().rpc('teacher_create_class', {
       p_name: name,
       p_join_code: joinCode,
       p_level_seed: levelSeed ?? null,
+      p_music_url: musicUrl?.trim() || null,
     });
     if (error) throw new Error(error.message);
 
@@ -276,6 +283,7 @@ export const remoteApi = {
       name: row.name,
       isOpen: row.is_open,
       levelSeed: row.level_seed ? Number(row.level_seed) : null,
+      musicUrl: row.music_url ?? null,
       createdAt: row.created_at,
     };
   },
@@ -284,11 +292,13 @@ export const remoteApi = {
     classId: string,
     isOpen: boolean,
     levelSeed?: number | null,
+    musicUrl?: string | null,
   ): Promise<import('@/types/game').TeacherClass> {
     const { data, error } = await client().rpc('teacher_update_class', {
       p_class_id: classId,
       p_is_open: isOpen,
       p_level_seed: levelSeed ?? null,
+      p_music_url: musicUrl?.trim() || null,
     });
     if (error) throw new Error(error.message);
 
@@ -299,6 +309,7 @@ export const remoteApi = {
       name: row.name,
       isOpen: row.is_open,
       levelSeed: row.level_seed ? Number(row.level_seed) : null,
+      musicUrl: row.music_url ?? null,
       createdAt: row.created_at,
     };
   },
