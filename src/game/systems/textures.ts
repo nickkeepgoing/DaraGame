@@ -31,6 +31,9 @@ const C = {
   fernDark: 0x3e9e52,
   eggShell: 0xfff3db,
   eggSpot: 0xe6a86c,
+  // สีเตือนอันตรายร่วม — ใช้กับ "ตัวขวาง" (rock/fern/egg/spike_rock) เท่านั้น
+  // เพื่อให้ผู้เล่นแยกออกจาก "ของตกแต่ง" (flower/shroom/fossil/crystal) ที่เดินผ่านได้เฉยๆ
+  hazardEdge: 0xff3b3b,
 
   meteor: 0x544557,
   meteorHot: 0xff6b3d,
@@ -235,6 +238,9 @@ export function createTextures(scene: Phaser.Scene): void {
     // รอยแตกบอกว่ามันคม
     g.fillStyle(C.rockDark, 0.8);
     g.fillTriangle(24, 46, 30, 34, 29, 50);
+    // ขอบเรืองแดง — สัญญาณอันตรายร่วมกับตัวขวางตัวอื่น (ดู hazardEdge)
+    g.lineStyle(2, C.hazardEdge, 0.6);
+    g.strokeTriangle(4, 74, 22, 2, 40, 74);
   });
 
   // เทอโรซอร์บินสวนระดับหัว — หมอบอย่างเดียวถึงรอด กระโดดยิ่งโดนเต็มๆ
@@ -270,6 +276,13 @@ export function createTextures(scene: Phaser.Scene): void {
     g.fillEllipse(22, 19, 40, 30);
     g.fillStyle(0xffffff, 0.22);
     g.fillEllipse(15, 13, 14, 9);
+    // รอยแตกเรืองแดง + ขอบเตือน — สัญญาณอันตรายร่วมกับตัวขวางตัวอื่น (ดู hazardEdge)
+    // ให้แยกจาก 'fossil' (ของตกแต่งหน้าตาคล้ายกันแต่เดินผ่านได้) ได้ชัดเจน
+    g.fillStyle(C.hazardEdge, 0.85);
+    g.fillTriangle(17, 8, 23, 19, 19, 21);
+    g.fillTriangle(23, 19, 29, 9, 27, 22);
+    g.lineStyle(2, C.hazardEdge, 0.5);
+    g.strokeEllipse(22, 19, 40, 30);
   });
 
   bake(scene, 'fern', 42, 48, (g) => {
@@ -290,6 +303,12 @@ export function createTextures(scene: Phaser.Scene): void {
     }
     g.fillStyle(C.fernDark, 0.5);
     g.fillEllipse(21, 22, 10, 12);
+    // หนามแดงแซมปลายใบ — สัญญาณอันตรายร่วมกับตัวขวางตัวอื่น (ดู hazardEdge)
+    // เฟิร์นเฉยๆ ดูไม่อันตราย จึงต้องมีสัญญาณเสริมแยกจาก 'flower' ที่หน้าตาคล้ายกัน
+    g.fillStyle(C.hazardEdge, 0.85);
+    g.fillTriangle(21, 8, 18, 1, 24, 3);
+    g.fillTriangle(3, 12, 0, 5, 7, 8);
+    g.fillTriangle(39, 12, 42, 5, 35, 8);
   });
 
   bake(scene, 'egg', 32, 40, (g) => {
@@ -301,6 +320,14 @@ export function createTextures(scene: Phaser.Scene): void {
     g.fillCircle(15, 31, 2.1);
     g.fillStyle(0xffffff, 0.35);
     g.fillEllipse(11, 12, 8, 11);
+    // รอยร้าวเรืองแดง — บอกว่ากำลังจะฟัก อันตราย ไม่ใช่ของตกแต่ง (ดู hazardEdge)
+    g.lineStyle(2, C.hazardEdge, 0.75);
+    g.beginPath();
+    g.moveTo(11, 5);
+    g.lineTo(15, 15);
+    g.lineTo(10, 21);
+    g.lineTo(16, 29);
+    g.strokePath();
   });
 
   bake(scene, 'meteor', 38, 38, (g) => {
