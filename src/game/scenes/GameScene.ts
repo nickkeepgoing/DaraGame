@@ -546,9 +546,9 @@ export class GameScene extends Phaser.Scene {
     // หินแหลมโผล่ตั้งแต่ด่าน 2 เป็นต้นไป (ด่าน 1 ให้ผู้เล่นชินกับการกระโดดก่อน)
     const tallOK = allowTall && this.stage >= 2;
     const key = this.rng.weighted({
-      rock: tallOK ? 0.36 : 0.5,
-      fern: tallOK ? 0.22 : 0.28,
-      egg: tallOK ? 0.18 : 0.22,
+      bomb: tallOK ? 0.36 : 0.5,
+      spike_low: tallOK ? 0.22 : 0.28,
+      mine: tallOK ? 0.18 : 0.22,
       spike_rock: tallOK ? 0.24 : 0,
     });
     const sprite = this.obstacles.get(x, GROUND_Y, key) as ArcadeSprite | null;

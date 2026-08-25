@@ -25,13 +25,16 @@ const C = {
   pupil: 0x231633,
   sparkle: 0xffffff,
 
-  rock: 0xaa9584,
-  rockDark: 0x7a6555,
-  fern: 0x6bd680,
-  fernDark: 0x3e9e52,
-  eggShell: 0xfff3db,
-  eggSpot: 0xe6a86c,
-  // สีเตือนอันตรายร่วม — ใช้กับ "ตัวขวาง" (rock/fern/egg/spike_rock) เท่านั้น
+  // ตัวขวางทุกตัวเป็น "ระเบิด" หรือ "หนาม" เท่านั้น — ห้ามเป็นลูกกลมๆ เฉยๆ หรือดอกไม้ใบไม้
+  // (เดิมเคยเป็นก้อนหิน/เฟิร์น/ไข่ที่ต้องแปะขอบเรืองแดงเพิ่มเพื่อบอกว่าอันตราย
+  //  ตอนนี้เปลี่ยนรูปทรงให้อ่านออกว่าอันตรายในตัวเองแทน)
+  bomb: 0x2b2438,
+  bombDark: 0x1a1522,
+  bombRim: 0x473a5c,
+  fuse: 0x8a5f8f,
+  spike: 0x5c4d6e,
+  spikeDark: 0x3a3049,
+  // สีเตือนอันตรายร่วม — ใช้กับ "ตัวขวาง" (bomb/spike_low/mine/spike_rock/meteor) เท่านั้น
   // เพื่อให้ผู้เล่นแยกออกจาก "ของตกแต่ง" (flower/shroom/fossil/crystal) ที่เดินผ่านได้เฉยๆ
   hazardEdge: 0xff3b3b,
 
@@ -226,17 +229,22 @@ export function createTextures(scene: Phaser.Scene): void {
     g.fillCircle(90.6, 36, 1.1);
   });
 
-  /* ---------------- สิ่งกีดขวาง ---------------- */
-  // หินแหลมสูง — ต้องกดกระโดดค้างถึงจะข้ามพ้น แตะสั้นๆ ไม่พอ
+  /* ---------------- สิ่งกีดขวาง ----------------
+   * ทุกตัวต้องอ่านออกทันทีว่า "อันตราย" ในตัวเอง — เป็นระเบิดหรือหนามแหลมเท่านั้น
+   * ห้ามเป็นก้อนกลมๆ เฉยๆ หรือหน้าตาคล้ายดอกไม้/ใบไม้ที่ไปปนกับของตกแต่ง
+   * (ของตกแต่งเดินผ่านได้จริงอยู่ในกลุ่ม decors แยกกัน — ดู 'flower' ด้านล่าง)
+   */
+
+  // หนามแหลมสูง — ต้องกดกระโดดค้างถึงจะข้ามพ้น แตะสั้นๆ ไม่พอ
   bake(scene, 'spike_rock', 44, 74, (g) => {
-    g.fillStyle(C.rockDark, 1);
+    g.fillStyle(C.spikeDark, 1);
     g.fillTriangle(4, 74, 22, 2, 40, 74);
-    g.fillStyle(C.rock, 1);
+    g.fillStyle(C.spike, 1);
     g.fillTriangle(9, 74, 22, 10, 32, 74);
-    g.fillStyle(0xffffff, 0.18);
+    g.fillStyle(0xffffff, 0.16);
     g.fillTriangle(13, 70, 22, 16, 24, 70);
-    // รอยแตกบอกว่ามันคม
-    g.fillStyle(C.rockDark, 0.8);
+    // รอยเงาบอกว่ามันคม
+    g.fillStyle(C.spikeDark, 0.8);
     g.fillTriangle(24, 46, 30, 34, 29, 50);
     // ขอบเรืองแดง — สัญญาณอันตรายร่วมกับตัวขวางตัวอื่น (ดู hazardEdge)
     g.lineStyle(2, C.hazardEdge, 0.6);
@@ -269,77 +277,120 @@ export function createTextures(scene: Phaser.Scene): void {
     g.fillCircle(51, 14, 1.7);
   });
 
-  bake(scene, 'rock', 46, 36, (g) => {
-    g.fillStyle(C.rockDark, 1);
-    g.fillEllipse(23, 26, 44, 18);
-    g.fillStyle(C.rock, 1);
-    g.fillEllipse(22, 19, 40, 30);
-    g.fillStyle(0xffffff, 0.22);
-    g.fillEllipse(15, 13, 14, 9);
-    // รอยแตกเรืองแดง + ขอบเตือน — สัญญาณอันตรายร่วมกับตัวขวางตัวอื่น (ดู hazardEdge)
-    // ให้แยกจาก 'fossil' (ของตกแต่งหน้าตาคล้ายกันแต่เดินผ่านได้) ได้ชัดเจน
-    g.fillStyle(C.hazardEdge, 0.85);
-    g.fillTriangle(17, 8, 23, 19, 19, 21);
-    g.fillTriangle(23, 19, 29, 9, 27, 22);
-    g.lineStyle(2, C.hazardEdge, 0.5);
-    g.strokeEllipse(22, 19, 40, 30);
-  });
-
-  bake(scene, 'fern', 42, 48, (g) => {
-    g.fillStyle(C.fernDark, 1);
-    g.fillRoundedRect(19, 24, 4, 24, 2);
-    g.fillStyle(C.fern, 1);
-    // ใบแผ่เป็นพัด
-    const fronds: [number, number, number, number][] = [
-      [21, 30, 1, 6],
-      [21, 26, 4, 2],
-      [21, 22, 6, 0],
-      [21, 18, 4, -2],
-      [21, 16, 0, -4],
-    ];
-    for (const [x, y, dx, dy] of fronds) {
-      g.fillTriangle(x, y, x - 20 + dx * 2, y - 6 + dy, x - 18 + dx * 2, y + 5 + dy);
-      g.fillTriangle(x, y, x + 20 - dx * 2, y - 6 + dy, x + 18 - dx * 2, y + 5 + dy);
-    }
-    g.fillStyle(C.fernDark, 0.5);
-    g.fillEllipse(21, 22, 10, 12);
-    // หนามแดงแซมปลายใบ — สัญญาณอันตรายร่วมกับตัวขวางตัวอื่น (ดู hazardEdge)
-    // เฟิร์นเฉยๆ ดูไม่อันตราย จึงต้องมีสัญญาณเสริมแยกจาก 'flower' ที่หน้าตาคล้ายกัน
-    g.fillStyle(C.hazardEdge, 0.85);
-    g.fillTriangle(21, 8, 18, 1, 24, 3);
-    g.fillTriangle(3, 12, 0, 5, 7, 8);
-    g.fillTriangle(39, 12, 42, 5, 35, 8);
-  });
-
-  bake(scene, 'egg', 32, 40, (g) => {
-    g.fillStyle(C.eggShell, 1);
-    g.fillEllipse(16, 22, 28, 34);
-    g.fillStyle(C.eggSpot, 0.75);
-    g.fillCircle(11, 16, 3.2);
-    g.fillCircle(21, 25, 2.6);
-    g.fillCircle(15, 31, 2.1);
-    g.fillStyle(0xffffff, 0.35);
-    g.fillEllipse(11, 12, 8, 11);
-    // รอยร้าวเรืองแดง — บอกว่ากำลังจะฟัก อันตราย ไม่ใช่ของตกแต่ง (ดู hazardEdge)
-    g.lineStyle(2, C.hazardEdge, 0.75);
-    g.beginPath();
-    g.moveTo(11, 5);
-    g.lineTo(15, 15);
-    g.lineTo(10, 21);
-    g.lineTo(16, 29);
-    g.strokePath();
-  });
-
-  bake(scene, 'meteor', 38, 38, (g) => {
-    g.fillStyle(C.meteorGlow, 0.35);
-    g.fillCircle(19, 19, 18);
-    g.fillStyle(C.meteorHot, 0.8);
-    g.fillCircle(19, 19, 14);
-    g.fillStyle(C.meteor, 1);
-    g.fillCircle(19, 19, 11);
+  // ลูกระเบิดกลม ตั้งพื้น — ชนวนจุดแล้วมีประกายไฟบอกว่าใกล้ระเบิด
+  bake(scene, 'bomb', 40, 40, (g) => {
+    // เงาใต้ลูกระเบิด
     g.fillStyle(0x000000, 0.25);
-    g.fillCircle(15, 16, 3);
-    g.fillCircle(23, 22, 2.2);
+    g.fillEllipse(20, 37, 26, 6);
+    // ตัวกลม
+    g.fillStyle(C.bombDark, 1);
+    g.fillCircle(20, 24, 15);
+    g.fillStyle(C.bomb, 1);
+    g.fillCircle(18, 22, 14);
+    // ไฮไลต์มันวาว
+    g.fillStyle(C.bombRim, 0.55);
+    g.fillEllipse(13, 15, 9, 6);
+    g.fillStyle(0xffffff, 0.28);
+    g.fillEllipse(12, 13, 5, 3.5);
+    // ปลอกชนวนที่หัว
+    g.fillStyle(C.bombDark, 1);
+    g.fillRoundedRect(17, 8, 6, 6, 2);
+    // เชือกชนวนโค้ง
+    g.lineStyle(2.5, C.fuse, 1);
+    g.beginPath();
+    g.moveTo(20, 9);
+    g.lineTo(25, 6);
+    g.lineTo(22, 3);
+    g.strokePath();
+    // ประกายไฟปลายชนวน
+    g.fillStyle(C.meteorGlow, 0.35);
+    g.fillCircle(23, 3, 6);
+    g.fillStyle(C.meteorHot, 0.9);
+    g.fillCircle(23, 3, 3.2);
+    g.fillStyle(0xfff3c4, 1);
+    g.fillCircle(23, 3, 1.3);
+    // ขอบเรืองแดง — สัญญาณอันตรายร่วมกับตัวขวางตัวอื่น (ดู hazardEdge)
+    g.lineStyle(2, C.hazardEdge, 0.45);
+    g.strokeCircle(18, 22, 14);
+  });
+
+  // กองหนามแหลม 3 ยอด — เตี้ยกว่าหนามหลัก แต่แผ่กว้างข้ามได้ยากกว่า
+  bake(scene, 'spike_low', 40, 50, (g) => {
+    g.fillStyle(C.spikeDark, 0.45);
+    g.fillEllipse(20, 47, 32, 9);
+
+    const spikes: [number, number, number, number][] = [
+      [3, 17, 9, 27], // ซ้าย เตี้ย
+      [12, 29, 20, 5], // กลาง สูงสุด
+      [23, 37, 31, 24], // ขวา กลาง
+    ];
+    for (const [x1, x2, tipX, tipY] of spikes) {
+      g.fillStyle(C.spikeDark, 1);
+      g.fillTriangle(x1, 50, tipX, tipY, x2, 50);
+      g.fillStyle(C.spike, 1);
+      g.fillTriangle(x1 + 2, 49, tipX, tipY + 4, x2 - 2, 49);
+      g.lineStyle(1.5, C.hazardEdge, 0.55);
+      g.strokeTriangle(x1, 50, tipX, tipY, x2, 50);
+    }
+  });
+
+  // กับระเบิดหนาม — ลูกกลมมีหนามแทงออกรอบตัว ไม่ใช่ลูกบอลเปล่าๆ
+  bake(scene, 'mine', 34, 34, (g) => {
+    const cx = 17;
+    const cy = 17;
+    const innerR = 6;
+    const outerR = 15;
+    for (let i = 0; i < 8; i++) {
+      const angle = (i * Math.PI) / 4;
+      const spread = 0.28;
+      const x1 = cx + innerR * Math.cos(angle - spread);
+      const y1 = cy + innerR * Math.sin(angle - spread);
+      const x2 = cx + innerR * Math.cos(angle + spread);
+      const y2 = cy + innerR * Math.sin(angle + spread);
+      const tipX = cx + outerR * Math.cos(angle);
+      const tipY = cy + outerR * Math.sin(angle);
+      g.fillStyle(C.spikeDark, 1);
+      g.fillTriangle(x1, y1, tipX, tipY, x2, y2);
+    }
+    g.fillStyle(C.bombDark, 1);
+    g.fillCircle(cx, cy, 9);
+    g.fillStyle(C.bomb, 1);
+    g.fillCircle(cx - 1.5, cy - 1.5, 8);
+    g.fillStyle(0xffffff, 0.25);
+    g.fillEllipse(cx - 4, cy - 4, 6, 4);
+    // ไฟกลางเตือนว่าติดอาวุธพร้อมระเบิด
+    g.fillStyle(C.hazardEdge, 0.9);
+    g.fillCircle(cx, cy, 2.4);
+  });
+
+  // อุกกาบาตลูกไฟ — เหมือนระเบิดตกจากฟ้า มีชนวนลากไฟตามหลัง ไม่ใช่ลูกไฟกลมเฉยๆ
+  bake(scene, 'meteor', 38, 38, (g) => {
+    // ควัน/ไฟลากหางบอกทิศตก
+    g.fillStyle(C.meteorGlow, 0.3);
+    g.fillCircle(24, 10, 9);
+    g.fillStyle(C.meteorHot, 0.5);
+    g.fillCircle(27, 6, 6);
+    // ตัวกลม
+    g.fillStyle(C.bombDark, 1);
+    g.fillCircle(18, 20, 12);
+    g.fillStyle(C.bomb, 1);
+    g.fillCircle(16, 18, 11);
+    g.fillStyle(0x000000, 0.25);
+    g.fillCircle(13, 15, 3);
+    g.fillCircle(21, 22, 2.2);
+    // ชนวนจุดไฟลุกโชนอยู่ด้านบน
+    g.lineStyle(2.5, C.fuse, 1);
+    g.beginPath();
+    g.moveTo(18, 8);
+    g.lineTo(22, 4);
+    g.strokePath();
+    g.fillStyle(C.meteorHot, 0.95);
+    g.fillCircle(23, 3, 4);
+    g.fillStyle(0xfff3c4, 1);
+    g.fillCircle(23, 3, 1.8);
+    // ขอบเรืองแดง — สัญญาณอันตรายร่วมกับตัวขวางตัวอื่น (ดู hazardEdge)
+    g.lineStyle(2, C.hazardEdge, 0.4);
+    g.strokeCircle(16, 18, 11);
   });
 
   /* ---------------- Checkpoint คำถาม ---------------- */
