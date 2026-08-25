@@ -565,6 +565,19 @@ export class GameScene extends Phaser.Scene {
     const h = sprite.height * 0.72;
     body.setSize(w, h);
     body.setOffset((sprite.width - w) / 2, sprite.height - h);
+
+    // กระพริบเบาๆ ตลอดเวลา — สัญญาณอันตรายที่มองเห็นได้ไกลกว่าสีขอบเฉยๆ
+    // โดยเฉพาะตอนพื้นหลังโทนมืด
+    this.tweens.killTweensOf(sprite);
+    sprite.setAlpha(1);
+    this.tweens.add({
+      targets: sprite,
+      alpha: 0.55,
+      duration: 280,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
   }
 
   /**
@@ -802,6 +815,18 @@ export class GameScene extends Phaser.Scene {
     body.setAllowGravity(false);
     body.setVelocity(this.rng.range(-90, -20), this.rng.range(380, 470));
     body.setCircle(13, 6, 6);
+
+    // กระพริบเบาๆ ตลอดเวลา — สัญญาณอันตรายที่มองเห็นได้ไกลกว่าสีขอบเฉยๆ
+    this.tweens.killTweensOf(sprite);
+    sprite.setAlpha(1);
+    this.tweens.add({
+      targets: sprite,
+      alpha: 0.55,
+      duration: 280,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
   }
 
 

@@ -36,7 +36,8 @@ const C = {
   spikeDark: 0x3a3049,
   // สีเตือนอันตรายร่วม — ใช้กับ "ตัวขวาง" (bomb/spike_low/mine/spike_rock/meteor) เท่านั้น
   // เพื่อให้ผู้เล่นแยกออกจาก "ของตกแต่ง" (flower/shroom/fossil/crystal) ที่เดินผ่านได้เฉยๆ
-  hazardEdge: 0xff3b3b,
+  // ใช้สีส้มสว่างแทนแดง — แดงเดิมมืดเกินไป กลืนกับพื้นหลังโทนมืด มองไม่ทัน
+  hazardEdge: 0xff9500,
 
   meteor: 0x544557,
   meteorHot: 0xff6b3d,
@@ -246,8 +247,8 @@ export function createTextures(scene: Phaser.Scene): void {
     // รอยเงาบอกว่ามันคม
     g.fillStyle(C.spikeDark, 0.8);
     g.fillTriangle(24, 46, 30, 34, 29, 50);
-    // ขอบเรืองแดง — สัญญาณอันตรายร่วมกับตัวขวางตัวอื่น (ดู hazardEdge)
-    g.lineStyle(2, C.hazardEdge, 0.6);
+    // ขอบเรืองส้ม — สัญญาณอันตรายร่วมกับตัวขวางตัวอื่น (ดู hazardEdge)
+    g.lineStyle(3, C.hazardEdge, 0.95);
     g.strokeTriangle(4, 74, 22, 2, 40, 74);
   });
 
@@ -309,8 +310,8 @@ export function createTextures(scene: Phaser.Scene): void {
     g.fillCircle(23, 3, 3.2);
     g.fillStyle(0xfff3c4, 1);
     g.fillCircle(23, 3, 1.3);
-    // ขอบเรืองแดง — สัญญาณอันตรายร่วมกับตัวขวางตัวอื่น (ดู hazardEdge)
-    g.lineStyle(2, C.hazardEdge, 0.45);
+    // ขอบเรืองส้ม — สัญญาณอันตรายร่วมกับตัวขวางตัวอื่น (ดู hazardEdge)
+    g.lineStyle(3, C.hazardEdge, 0.95);
     g.strokeCircle(18, 22, 14);
   });
 
@@ -329,7 +330,7 @@ export function createTextures(scene: Phaser.Scene): void {
       g.fillTriangle(x1, 50, tipX, tipY, x2, 50);
       g.fillStyle(C.spike, 1);
       g.fillTriangle(x1 + 2, 49, tipX, tipY + 4, x2 - 2, 49);
-      g.lineStyle(1.5, C.hazardEdge, 0.55);
+      g.lineStyle(2.5, C.hazardEdge, 0.95);
       g.strokeTriangle(x1, 50, tipX, tipY, x2, 50);
     }
   });
@@ -359,8 +360,11 @@ export function createTextures(scene: Phaser.Scene): void {
     g.fillStyle(0xffffff, 0.25);
     g.fillEllipse(cx - 4, cy - 4, 6, 4);
     // ไฟกลางเตือนว่าติดอาวุธพร้อมระเบิด
-    g.fillStyle(C.hazardEdge, 0.9);
-    g.fillCircle(cx, cy, 2.4);
+    g.fillStyle(C.hazardEdge, 1);
+    g.fillCircle(cx, cy, 3.2);
+    // ขอบเรืองส้มรอบตัวทั้งลูก ให้เห็นชัดตั้งแต่ไกล
+    g.lineStyle(2.5, C.hazardEdge, 0.9);
+    g.strokeCircle(cx, cy, outerR + 1);
   });
 
   // อุกกาบาตลูกไฟ — เหมือนระเบิดตกจากฟ้า มีชนวนลากไฟตามหลัง ไม่ใช่ลูกไฟกลมเฉยๆ
@@ -388,8 +392,8 @@ export function createTextures(scene: Phaser.Scene): void {
     g.fillCircle(23, 3, 4);
     g.fillStyle(0xfff3c4, 1);
     g.fillCircle(23, 3, 1.8);
-    // ขอบเรืองแดง — สัญญาณอันตรายร่วมกับตัวขวางตัวอื่น (ดู hazardEdge)
-    g.lineStyle(2, C.hazardEdge, 0.4);
+    // ขอบเรืองส้ม — สัญญาณอันตรายร่วมกับตัวขวางตัวอื่น (ดู hazardEdge)
+    g.lineStyle(3, C.hazardEdge, 0.95);
     g.strokeCircle(16, 18, 11);
   });
 
