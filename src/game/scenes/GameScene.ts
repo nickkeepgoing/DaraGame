@@ -724,7 +724,13 @@ export class GameScene extends Phaser.Scene {
     sprite.setTexture('gate');
     sprite.enableBody(true, x, GROUND_Y - 4, true, true);
     sprite.setOrigin(0.5, 1).setDepth(5).setAlpha(0.95);
-    (sprite.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
+    const gateBody = sprite.body as Phaser.Physics.Arcade.Body;
+    gateBody.setAllowGravity(false);
+    // ⚠️ ตัวชน (hitbox) ของประตูสูงแค่ 132px เท่าสไปรท์ แต่กระโดดขึ้นได้ถึง 241px
+    //    ถ้าปล่อยตามขนาดสไปรท์ ผู้เล่นกระโดดข้ามประตูได้โดยไม่โดน overlap เลย
+    //    ทำให้ข้ามคำถามไปได้ทั้งที่ยังไม่ตอบ — ขยาย hitbox สูงเกินกระโดดสุดแรงไปมาก
+    //    (สไปรท์ที่มองเห็นยังขนาดเดิม แค่โซนตรวจชนสูงขึ้น)
+    gateBody.setSize(sprite.width, 2000).setOffset(0, sprite.height - 2000);
     sprite.setData('used', false);
 
     this.tweens.killTweensOf(sprite);
